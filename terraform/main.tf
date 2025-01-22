@@ -12,18 +12,21 @@ resource "proxmox_virtual_environment_pool" "pve_pool_k8s" {
 resource "proxmox_virtual_environment_network_linux_bridge" "vmbr_mgt" {
   node_name = var.root_pve_node
   name    = "vmbr10"
+  comment = "Bridge_10_Management"
   address = "10.0.10.0/24"
   autostart = true
   vlan_aware = true
-  comment = "Bridge_10_Management"
+  ports = [
+    "enx00e04c424a99"
+  ]
 }
 resource "proxmox_virtual_environment_network_linux_bridge" "vmbr_k8s" {
   node_name = var.root_pve_node
   name    = "vmbr80"
+  comment = "Bridge_80_Kubernetes"
   address = "10.0.80.0/24"
   autostart = true
   vlan_aware = true
-  comment = "Bridge_80_Kubernetes"
 }
 
 ### Proxmox: Virtual Machines
