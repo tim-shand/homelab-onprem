@@ -2,14 +2,14 @@
 
 _My personal home lab, running Proxmox and Kubernetes, configured/deployed using GitOps and IaC toolsets._
 
-The purpose of this environment is provide myself a place to tinker and learn new technologies.
+The purpose of this homelab is provide an environment to self host and learn new technologies.
 
-My homelab runs on Proxmox VE hypervisors, combined with virtualized Kubernetes nodes operating in a cluster.
-The simplicty of my homelab reflects my minimalist-style mindset; small foot print and reduced clutter.
+This homelab runs on Proxmox VE hypervisors, combined with virtualized Kubernetes nodes operating in a cluster.
+The simplicty of the lab reflects my minimalist-style mindset; small foot print and reduced clutter.
 I have always had a fondness for the small form factor/mini PCs.
-Being reasonably priced and still fairly common, they make such great additions to the lab.
+Being reasonably priced and fairly common, they make great additions to the lab as hosts.
 
-Where feasible, I will aim to keep in line with best practices.  
+Where feasible, I aim to keep in line with best practices.  
 As I develop my skills further, changes will likely occur and new additions will be made.  
 
 ## Infrastructure
@@ -17,9 +17,10 @@ As I develop my skills further, changes will likely occur and new additions will
 ### Hypervisors
 
 - Running [Proxmox VE](https://www.proxmox.com/en/products/proxmox-virtual-environment/overview) in single node configuration (for now).
-- 1x HP EliteDesk G1
+- **Host 1**
+  - Model: HP EliteDesk G1
   - CPU: Intel i5-4590T (4 cores, 4 threads).
-  - RAM: 12 GB DDR3 (2x SODIMM)
+  - RAM: 16 GB DDR3 (2x SODIMM)
   - Disk: 250 GB SSD
 
 ### Networking
@@ -30,7 +31,7 @@ As I develop my skills further, changes will likely occur and new additions will
 ### Kubernetes
 
 - 1x Master Node (Control Plane)
-- 2x Work Nodes
+- 2x Worker Nodes
 
 ## Deployment Tool Set
 
@@ -38,10 +39,13 @@ As I develop my skills further, changes will likely occur and new additions will
   - [Terraform](https://www.terraform.io/)
     - Free, easy to learn, agnostic IaC tool.
     - Used to provision my Proxmox virtual infrastructre (VMs, vNets etc) using the [BGP](https://registry.terraform.io/providers/bpg/proxmox/latest) provider.
+    - Chosen as it is provider agnostic, plenty of discussion, guides and support available.
+    - Other considerations: Pulumi (planning to investigate this further).
 - **Configuration**
   - [Ansible](https://www.redhat.com/en/ansible-collaborative)
     - Free configuration management tool.
     - Maintain configuration states (install applications, deploy settings post deployment etc).
+    - Chosen due to the large amount of community discussion and support.
 - **GitOps**
   - TBC
 - **Kubernetes**
