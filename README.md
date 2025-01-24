@@ -5,7 +5,8 @@ _My personal home lab, running Proxmox and Kubernetes, configured/deployed using
 The purpose of this homelab is provide an environment to self host and learn new technologies.
 
 This homelab runs on Proxmox VE hypervisors, combined with virtualized Kubernetes nodes operating in a cluster.
-The simplicty of the lab reflects my minimalist-style mindset; small foot print and reduced clutter.
+I also try leverage Azure services (Key Vault, App Registrations, Storage etc) where suitable.
+The physical simplicty of the lab reflects my minimalist-style mindset; small foot print and reduced clutter.
 I have always had a fondness for the small form factor/mini PCs.
 Being reasonably priced and fairly common, they make great additions to the lab as hosts.
 
