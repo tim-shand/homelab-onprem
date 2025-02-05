@@ -44,7 +44,7 @@ This process will be using the Microsoft Graph Bicep extension to deploy the ini
 - Bicep provides access to the latest Azure (ARM) APIs.
 - Stores deployment state in Azure, removing the need for maintaining external state files.
 
-## To Be Created
+## Resource Creation
 
 ### Entra ID
 
@@ -53,7 +53,7 @@ This process will be using the Microsoft Graph Bicep extension to deploy the ini
   - Group-level role assignments to subscription
 - **App Registration**
   - Service Principal (added to above Security Group)
-  - Client Secret (added to Key Vault)
+  - Client Secret (to be added to Key Vault)
 
 ### Resources
 
@@ -73,9 +73,9 @@ This step uses the Bicep files within this repo.
 2. Validate the deployment template:  
 `az deployment tenant validate --location australiaeast --template-file main.bicep --parameters main.bicepparam`  
 3. Execute the 'Tenant' deployment, giving it a name using the command:  
-`az deployment tenant create --name AzDeployTenant01 --location australiaeast --template-file tenant.bicep --parameters tenant.bicepparam`  
-4. Execute the 'Main' deployment, giving it a name using the command:  
-`az deployment sub create --name AzDeployMain01 --location australiaeast --template-file main.bicep --parameters main.bicepparam`  
+`az deployment tenant create --name az_tenant_deploy --location australiaeast --template-file tenant.bicep --parameters tenant.bicepparam`  
+4. Execute the 'Subscription' deployment, giving it a name using the command:  
+`az deployment sub create --name az_resource_deploy --location australiaeast --template-file main.bicep --parameters main.bicepparam`  
 
 ### Step 2: Azure CLI _(Imperative)_
 

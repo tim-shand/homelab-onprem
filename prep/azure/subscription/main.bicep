@@ -13,7 +13,7 @@ param stbName string
 param stcName string
 
 // Create: Resource Group 
-resource resourceGroup 'Microsoft.Resources/resourceGroups@2024-07-01' = {
+resource rg 'Microsoft.Resources/resourceGroups@2024-07-01' = {
   //scope: subscription()
   name: rgName
   location: location
@@ -22,8 +22,8 @@ resource resourceGroup 'Microsoft.Resources/resourceGroups@2024-07-01' = {
 
 // Create: Storage Account and Key Vault
 module resources 'resources.bicep' = {
-  scope: resourceGroup
-  name: 'deploy_resources'
+  scope: rg
+  name: 'deploy_sub_resources'
   params: {
     staName: staName
     stbName: stbName
