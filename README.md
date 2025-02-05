@@ -17,7 +17,7 @@ As I develop my skills further, changes will likely occur and new additions will
 
 ### Hypervisors
 
-- This is where Micro PCs and Small Form Factor shines.
+- This is where Small Form Factor and Micro PCs shine.
 - HP EliteDesk G1 (Intel i5-4590T, 16 GB DDR3, 250 GB SSD).
 - Running [Proxmox VE](https://www.proxmox.com/en/products/proxmox-virtual-environment/overview) in single node configuration (for now).
 
