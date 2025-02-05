@@ -1,4 +1,4 @@
-  # Read in root level variables. 
+# Read in root level variables. 
 variable "instances" {}
 variable "hostname_prefix" {}
 variable "vmid_start" {}

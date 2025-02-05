@@ -1,7 +1,6 @@
 ### pfSense Firewall
 # URL: https://atxfiles.netgate.com/mirror/downloads/
 
-# Module: Kubernets - Ubuntu VM (Master Node)
 terraform {
   required_providers {
     proxmox = {

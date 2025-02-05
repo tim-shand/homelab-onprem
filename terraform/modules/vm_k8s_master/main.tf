@@ -1,4 +1,3 @@
-# Module: Kubernets - Ubuntu VM (Master Node)
 terraform {
   required_providers {
     proxmox = {
