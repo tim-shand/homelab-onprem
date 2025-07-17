@@ -53,6 +53,7 @@ As I develop my skills further, changes will likely occur and new additions will
 
 ## To Do / Implement
 
+- [-] Migrate 'prep' to 'helpers' - using PS/AzureCLI for bootstrapping. 
 - [ ] Configure Monitoring and Observability.
 - [ ] Investigate implementing a SIEM for logging security events.
 - [ ] Add additional hypervisors for clustering benefits (HA/failover).
