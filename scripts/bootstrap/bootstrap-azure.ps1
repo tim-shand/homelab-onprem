@@ -140,7 +140,7 @@ function Set-AzureDevOps {
 }
 
 # Function: Create Serivce Principal for Azure DevOps/Terraform -----------------#
-function Create-ServicePrincipal {
+function New-ServicePrincipal {
     param (
         [string]$spName,
         [string]$rootMgId
@@ -230,7 +230,7 @@ $subscriptionName = az account show --query name -o tsv
 $rootMgId = az account management-group list --query "[?displayName=='Tenant Root Group'].name" -o tsv
 
 # Create Service Principal for Azure DevOps/Terraform.
-$servicePrincipal = Create-ServicePrincipal -spName $servicePrincipalName -rootMgId $rootMgId
+$servicePrincipal = New-ServicePrincipal -spName $servicePrincipalName -rootMgId $rootMgId
 
 # Configure Azure DevOps.
 Set-AzureDevOps -adoOrgUrl $adoOrgUrl -adoProjectName $adoProjectName `
