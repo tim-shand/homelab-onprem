@@ -1,11 +1,21 @@
-#--------------------------------------------------------------------------#
-# Azure Tenant Bootstrap Script for Terraform Backend
-# This script sets up a Terraform backend in Azure.
-# It also configures a project within Azure DevOps for automation (CI/CD).
+#=====================================================#
+# Bootstrap: Azure Tenant (Windows PowerShell)
+#=====================================================#
 
-#==========================================================================#
+# DESCRIPTION:
+# Azure Tenant Bootstrap Script for Terraform Backend.
+# Sets up a Terraform backend in Azure using Storage Account and Blob Container.
+# It also creates a Service Principal for Azure DevOps/Terraform integration.
+
+# NOTE: 
+# Requires administrator privileges to run.
+
+# USAGE:
+# .\scripts\bootstrap\bootstrap-azure.ps1
+
+#------------------------------------------------#
 # VARIABLES
-#==========================================================================#
+#------------------------------------------------#
 
 $orgPrefix = "tjs" # Short code name for the organization.
 $location = "australiaeast"
@@ -35,14 +45,7 @@ $adoProjectName = "Home Lab - Azure Landing Zone" # Azure DevOps Project name
 $serviceConnectionName = "$orgPrefix-$platform-$service-$environment-sc" # Service Connection name
 $servicePrincipalName = "$orgPrefix-$platform-$service-$environment-sp" # Service Principal name
 
-# Define list of required applications.
-$requiredApps = @()
-$requiredApps += [pscustomobject] @{Name = "Terraform"; Cmd = "terraform"; WinGetName = "Hashicorp.Terraform"}
-$requiredApps += [pscustomobject] @{Name = "Azure CLI"; Cmd = "az"; WinGetName = "Microsoft.AzureCLI"}
-$requiredApps += [pscustomobject] @{Name = "Git"; Cmd = "git"; WinGetName = "Git.Git"}
 
-# Define required Powershell modules.
-$requiredPSModules = @("Az","Microsoft.Entra")
 
 #==========================================================================#
 # FUNCTIONS
