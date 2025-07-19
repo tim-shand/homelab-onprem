@@ -27,27 +27,23 @@
 $orgPrefix = "tjs" # Short code name for the organization.
 $location = "australiaeast"
 $environment = "prd" # prd, dev, tst
-$owner = "CloudOps" # CloudOps, SecOps, ITOps
-$platform = "sys" # sys, app, web, inf, sec
+$platform = "mgt" # sys, app, web, inf, sec
 $project = "alzplatform" # alz-platform, alz-app, alz-web
 $service = "terraform" # terraform, ansible, kubernetes, security
-$creator = "Initial-Setup" # Initial-Setup, UserName
 $tags = @{ 
     environment = $environment;
-    owner = $owner;
-    platform = $platform; 
+    owner = "$($platform)-bootstrap";
+    platform = $platform;
     project = $project;
-    service = $service; 
+    service = $service;
     created = (Get-Date -f 'yyyyMMddHHmmss');
-    creator = $creator; 
+    creator = "$($platform)-bootstrap";
 }
 [string]$tagString = ($tags.GetEnumerator() | ForEach-Object { "$($_.Key)=$($_.Value)" }) -join ' '
-$nameLong = "$orgPrefix-$platform-$project-$environment" # Long name for descriptive purposes
-$nameShort = "$orgPrefix$($platform)$($service)$($environment)" # Short name for resource naming
-$resourceGroupName = "$nameLong-rg" # Resource Group name
-$storageAccountName = "$nameShort$(Get-Random -Minimum 100000 -Maximum 999999)" # Random suffix, max 24 characters
+$resourceGroupName = "$orgPrefix-$platform-$service-rg" # Resource Group name
+$storageAccountName = "$orgPrefix$($platform)$($service)$(Get-Random -Minimum 10000000 -Maximum 99999999)" # Random suffix, max 24 characters
 $containerName = "$orgPrefix-$platform-$service-tfstate" # Blob Container name
-$servicePrincipalName = "$orgPrefix-$platform-$service-$environment-sp" # Service Principal name
+$servicePrincipalName = "$orgPrefix-$platform-$service-sp" # Service Principal name
 
 #==========================================================================#
 # FUNCTIONS
@@ -108,23 +104,140 @@ function Write-Log {
 function Get-AzureCLI {
     $stage = "Check-AzureCLI"
     if (-not (Get-Command "az" -ErrorAction SilentlyContinue)) {
-        Write-Log -Level "WRN" -Stage $stage -Message "AzureCLI is not installed. Please run the 'local-setup' script and try again."
+        Write-Log -Level "WRN" -Stage $stage -Message "Azure CLI is not installed. Please run the 'local-setup' script and try again."
     } 
     else {
-        Write-Log -Level "INF" -Stage $stage -Message "AzureCLI is already installed."
+        Write-Log -Level "INF" -Stage $stage -Message "Azure CLI is already installed."
     }
 }
 
-function Deploy-AzureBootstrap {
+# Function: Check login to Azure.
+function Get-AzureLogin {
+    $stage = "Get-AzureLogin"
+    try {
+        $context = Get-AzContext -ErrorAction Stop
+        Write-Log -Level "INF" -Stage $stage -Message "Logged in to Azure as $($context.Account.Id)."
+    } catch {
+        $session = Connect-AzAccount -ErrorAction Stop
+        if ($session) {
+            Write-Log -Level "INF" -Stage $stage -Message "Successfully logged in to Azure."
+        } else {
+            Write-Log -Level "ERR" -Stage $stage -Message "Failed to log in to Azure. Please run 'Connect-AzAccount' and try again."
+            exit 1
+        }
+        Write-Log -Level "ERR" -Stage $stage -Message "Not logged in to Azure. Please run 'Connect-AzAccount' and try again."
+        exit 1
+    }
+}
 
-    Write-Log -Level "INF" -Stage "Deploy" -Message "Starting resource deployment..."
-    New-AzResourceGroup -Name $resourceGroupName -Location $location -Tags $tags
-    New-AzStorageAccount -Name $storageAccountName -ResourceGroupName $resourceGroupName -Tags $tags
-    New-AzBlobContainer -Name $containerName -StorageAccountName $storageAccountName
-    New-AzServicePrincipal -Name $servicePrincipalName -ResourceGroupName $resourceGroupName
-    New-AzRoleAssignment -ServicePrincipalName $servicePrincipalName -RoleDefinitionName "Contributor" -Scope "/subscriptions/$($Global:subscriptionId)/resourceGroups/$resourceGroupName"
-    Write-Log -Level "INF" -Stage "Deploy" -Message "Resources deployed successfully."
+function Get-AzureLogin {
+    $azSession = (Get-AzContext -ErrorAction Stop)
+    if ($azSession) {
+        Write-Log -Level "INF" -Stage "Get-AzureLogin" -Message "Logged in to Azure as $($azSession.Account.Id)."
+        return $currentSession
+    } else{
+        $azConnection = Connect-AzAccount -ErrorAction Stop
+        $azSession = (Get-AzContext -ErrorAction Stop)
+        if ($azConnection) {
+            do {
+                $userResponse = (Read-Host -Prompt "Proceed as '$($currentSession.Account)' in tenant '$($currentSession.TenantDomain)' [Y/N]")
+                if ($userResponse -inotmatch "^(Y|N|y|n)$") {
+                    Write-Log -Level "ERR" -Stage "Get-AzureLogin" -Message "Invalid response. Please enter 'Y' or 'N'."
+                } else{
+                    if ($userResponse -match "^(N|n)$") {
+                        Write-Log -Level "ERR" -Stage "Get-AzureLogin" -Message "User cancelled Azure login. Abort."
+                        exit 1
+                    } else{
+                        $azSession = (Get-AzContext -ErrorAction Stop)
+                        Write-Log -Level "INF" -Stage "Get-AzureLogin" -Message "Successfully logged in to Azure."
+                    }
+                }
+                } while (
+                # Repeat until a valid response is given.
+                $userResponse -notmatch "^(Y|N|y|n)$"
+            )
+        } else {
+            Write-Log -Level "ERR" -Stage "Get-AzureLogin" -Message "Failed to log in to Azure. Please run 'Connect-AzAccount' and try again."
+            exit 1
+        }        
+    }
+}
 
+function Deploy-AzureResources {
+    param (
+        [string]$resourceGroupName = $resourceGroupName,
+        [string]$location = $location,
+        [string]$storageAccountName = $storageAccountName,
+        [string]$containerName = $containerName,
+        [hashtable]$tags = $tags
+    )
+    $stage = "Deploy-AzureBootstrap"
+    Write-Log -Level "INF" -Stage "Deploy" -Message "Starting Azure resource deployment..."
+
+    # Resource Group: Check if the resource group already exists, create if not present.
+    $rgCheck = Get-AzResourceGroup -Name $resourceGroupName -ErrorAction SilentlyContinue
+    if ($rgCheck) {
+        Write-Log -Level "WRN" -Stage $stage -Message "Resource group '$resourceGroupName' already exists. Skip."
+    } else {
+        Write-Log -Level "INF" -Stage $stage -Message "Creating resource group '$resourceGroupName'."
+        New-AzResourceGroup -Name $resourceGroupName -Location $location -Tags $tags -ErrorAction Stop
+    }
+
+    # Storage Account: Check if the storage account already exists, create if not present.
+    $saCheck = Get-AzStorageAccount -Name $storageAccountName -ResourceGroupName $resourceGroupName -ErrorAction SilentlyContinue
+    if ($saCheck) {
+        Write-Log -Level "WRN" -Stage $stage -Message "Storage account '$storageAccountName' already exists. Skip."
+    } else {
+        Write-Log -Level "INF" -Stage $stage -Message "Creating storage account '$storageAccountName'."
+        New-AzStorageAccount -Name $storageAccountName -ResourceGroupName $resourceGroupName -Location $location -SkuName "Standard_LRS" -Tags $tags -ErrorAction Stop
+    }
+
+    # Blob Container: Check if the blob container already exists, create if not present.
+    $storageContext = (New-AzStorageContext -StorageAccountName $storageAccountName)
+    $containerCheck = Get-AzStorageContainer -Name $containerName -Context $storageContext -ErrorAction SilentlyContinue
+    if ($containerCheck) {
+        Write-Log -Level "WRN" -Stage $stage -Message "Blob container '$containerName' already exists. Skip."
+    } else {
+        Write-Log -Level "INF" -Stage $stage -Message "Creating blob container '$containerName'."
+        New-AzStorageContainer -Name $containerName -Context $storageContext -ErrorAction Stop
+    }
+}
+
+function Deploy-AzureServicePrincipal {
+    param (
+        [string]$servicePrincipalName = $servicePrincipalName
+    )
+    $stage = "Deploy-AzureServicePrincipal"
+
+    # Service Principal: Check if the service principal already exists, create if not present.
+    $spCheck = Get-AzADServicePrincipal -DisplayName $servicePrincipalName -ErrorAction SilentlyContinue
+    if ($spCheck) {
+        Write-Log -Level "WRN" -Stage $stage -Message "Service principal '$servicePrincipalName' already exists. Skip."
+    } else {
+        Write-Log -Level "INF" -Stage $stage -Message "Creating service principal '$servicePrincipalName'."
+        $sp = New-AzADServicePrincipal -DisplayName $servicePrincipalName -ErrorAction Stop
+        if ($sp) {
+            Write-Log -Level "INF" -Stage $stage -Message "Service principal '$servicePrincipalName' created successfully."
+        } else {
+            Write-Log -Level "ERR" -Stage $stage -Message "Failed to create service principal '$servicePrincipalName'."
+            exit 1
+        }
+    }
+
+    # Assign Role: Assign 'Contributor' role to the service principal on the tenant root management group.
+    $mg = Get-AzManagementGroup -GroupName "Tenant Root Group" -ErrorAction SilentlyContinue
+    if ($mg) {
+        $roleAssignment = New-AzRoleAssignment -ObjectId $sp.Id -RoleDefinitionName "Contributor" -Scope $mg.Id -ErrorAction Stop
+        if ($roleAssignment) {
+            Write-Log -Level "INF" -Stage $stage -Message "Assigned 'Contributor' role to service principal '$servicePrincipalName' on management group '$($mg.DisplayName)'."
+        } else {
+            Write-Log -Level "ERR" -Stage $stage -Message "Failed to assign role to service principal '$servicePrincipalName'."
+            exit 1
+        }
+    } else {
+        Write-Log -Level "ERR" -Stage $stage -Message "Management group 'Tenant Root Group' not found."
+        exit 1
+    }
 }
 
 #------------------------------------------------#
@@ -141,8 +254,12 @@ Get-Admin
 # Check for Azure CLI.
 Get-AzureCLI
 
-# Deploy Resources.
+# Login to Azure.
+Get-AzureLogin
 
+# Deploy Resources.
+Deploy-AzureResources -resourceGroupName $resourceGroupName -location $location -storageAccountName $storageAccountName -containerName $containerName -tags $tags
+Deploy-AzureServicePrincipal -servicePrincipalName $servicePrincipalName
 
 # End
 Write-Log -Level "INF" -Stage "END" -Message "Utility script execution completed."
