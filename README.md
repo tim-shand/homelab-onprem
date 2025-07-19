@@ -6,7 +6,7 @@ This home lab serves to provide an environment for self-hosting and experimentin
 As my knowledge expands, I aim to include new and existing operational, design and security best practices where possible. 
 My intention is to utilize automation and DevOps methodologies to ensure a clean, reproducable and well-managed environment. 
 
-## :classical_building: Physical Hardware
+## :office: Physical Hardware
 
 - **Hypervisors**
   - 1x HP EliteDesk G1 (Intel i5-4590T, 16 GB DDR3, 250 GB SSD).
@@ -16,7 +16,7 @@ My intention is to utilize automation and DevOps methodologies to ensure a clean
   - **Switch:** TP-Link TL-SG108PE 8-Port Gigabit Easy Smart PoE Switch.
   - Connecting hosts physically, providing outbound access to Internet routed out through home network.
 
-## :robot: Virtualized Infrastructure
+## :computer: Virtualized Infrastructure
 
 - **Firewall/Router:** Virtualized [pfSense](https://www.pfsense.org/download/) VM (for internal lab use).
 - **Virtual Machines:** Management servers, test and misc VMs.
