@@ -24,6 +24,9 @@
 [string]$Global:LoggingEventlog = $true # Enable Windows Eventlog logging.
 [int]$Global:LoggingEventlogId = 900 # Windows Eventlog ID used for logging.
 
+# Object for all results.
+$global:totalResults = @{}
+
 $orgPrefix = "tjs" # Short code name for the organization.
 $location = "australiaeast"
 $environment = "prd" # prd, dev, tst
@@ -119,7 +122,7 @@ function Get-AzureLogin {
     $global:azSession = (Get-AzContext -ErrorAction Stop)
     if ($global:azSession) {
         Write-Log -Level "INF" -Stage "Get-AzureLogin" -Message "Logged in to Azure as $($global:azSession.Account.Id)."
-        return $currentSession
+        #return $currentSession
     } else{
         $azConnection = Connect-AzAccount -ErrorAction Stop        
         if ($azConnection) {
@@ -132,7 +135,7 @@ function Get-AzureLogin {
                         Write-Log -Level "ERR" -Stage "Get-AzureLogin" -Message "User cancelled Azure login. Abort."
                         exit 1
                     } else{
-                        $global:azSession = (Get-AzContext -ErrorAction Stop)
+                        $global:azSession = (Get-AzContext -ErrorAction Stop)                        
                         Write-Log -Level "INF" -Stage "Get-AzureLogin" -Message "Successfully logged in to Azure."
                     }
                 }
@@ -155,6 +158,10 @@ function Rename-DefaultSubscription {
         $renameSub = (Rename-AzSubscription -Id $defaultSub.Id -SubscriptionName $subNameNew -ErrorAction SilentlyContinue)
         if ($renameSub) {
             Write-Log -Level "INF" -Stage $stage -Message "Default subscription renamed to '$($subNameNew)'."
+                $global:totalResults += @{
+                SubscriptionName = $subNameNew
+                SubscriptionId = $global:azSession.Subscription.Id
+            }
         } else {
             Write-Log -Level "ERR" -Stage $stage -Message "Failed to rename default subscription. Please try again."
             exit 1
@@ -203,6 +210,13 @@ function Deploy-AzureResources {
         Write-Log -Level "INF" -Stage $stage -Message "Creating blob container '$containerName'."
         New-AzStorageContainer -Name $containerName -Context $storageContext -ErrorAction Stop
     }
+    # Append to global results.
+    $global:totalResults += @{
+        Location = $location
+        ResourceGroupName = $resourceGroupName
+        StorageAccountName = $storageAccountName
+        ContainerName = $containerName
+    }
 }
 
 function Deploy-AzureServicePrincipal {
@@ -215,13 +229,35 @@ function Deploy-AzureServicePrincipal {
     # Service Principal: Check if the service principal already exists, create if not present.
     $spCheck = Get-AzADServicePrincipal -DisplayName $servicePrincipalName -ErrorAction SilentlyContinue
     if ($spCheck) {
-        Write-Log -Level "WRN" -Stage $stage -Message "Service principal '$servicePrincipalName' already exists. Skip."
+        Write-Log -Level "WRN" -Stage $stage -Message "Service principal '$servicePrincipalName' already exists. Regenerating credenital..."
+        $newSpCred = (New-AzADAppCredential -ApplicationId f2e3cd69-26c6-43b9-8eb0-d6c575a2da3b).SecretText
+        if ($newSpCred) {
+            Write-Log -Level "INF" -Stage $stage -Message "Service principal '$servicePrincipalName' credential regenerated successfully."
+            # Append to global results.
+            $global:totalResults += @{
+                ServicePrincipalName = $spCheck.DisplayName
+                ServicePrincipalTenantId = $spCheck.TenantId
+                ServicePrincipalAppId = $spCheck.AppId
+                ServicePrincipalSecret = $newSpCred
+            }
+        } else {
+            Write-Log -Level "ERR" -Stage $stage -Message "Failed to regenerate service principal '$servicePrincipalName' credential."
+            exit 1
+        }
         $sp = $spCheck
     } else {
         Write-Log -Level "INF" -Stage $stage -Message "Creating service principal '$servicePrincipalName'."
-        $sp = New-AzADServicePrincipal -DisplayName $servicePrincipalName -Description $servicePrincipalDesc -Note $servicePrincipalDesc -ErrorAction Stop
+        $sp = New-AzADServicePrincipal -DisplayName $servicePrincipalName -ErrorAction Stop
         if ($sp) {
             Write-Log -Level "INF" -Stage $stage -Message "Service principal '$servicePrincipalName' created successfully."
+
+            # Append to global results.
+            $global:totalResults += @{
+                ServicePrincipalName = $sp.DisplayName
+                ServicePrincipalTenantId = $sp.TenantId
+                ServicePrincipalAppId = $sp.AppId
+                ServicePrincipalSecret = ($sp.PasswordCredentials).SecretText
+            }
 
             # Assign Role: Assign 'Contributor' role to the service principal on the tenant root management group.
             $rootMG = Get-AzManagementGroup | ?{$_.DisplayName -eq $rootMGName}
@@ -266,6 +302,9 @@ Get-AzureLogin
 Rename-DefaultSubscription
 Deploy-AzureResources -resourceGroupName $resourceGroupName -location $location -storageAccountName $storageAccountName -containerName $containerName -tags $tags
 Deploy-AzureServicePrincipal -servicePrincipalName $servicePrincipalName
+
+# Output all details.
+$global:totalResults | fl
 
 # End
 Write-Log -Level "INF" -Stage "END" -Message "Utility script execution completed."
