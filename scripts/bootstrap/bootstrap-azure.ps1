@@ -156,7 +156,7 @@ function Rename-DefaultSubscription {
         $renameSub = (Rename-AzSubscription -Id $defaultSub.Id -SubscriptionName $subNameNew -ErrorAction SilentlyContinue)
         if ($renameSub) {
             Write-Log -Level "INF" -Stage $stage -Message "Default subscription renamed to '$($subNameNew)'."
-                $global:totalResults += @{
+            $global:totalResults += @{
                 SubscriptionName = $subNameNew
                 SubscriptionId = $global:azSession.Subscription.Id
             }
