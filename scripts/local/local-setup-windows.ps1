@@ -20,7 +20,7 @@
 # Global Variables
 [string]$Global:scriptName = "LocalSystemSetup" # Used for log file naming.
 [string]$Global:LoggingLocal = $true # Enable local log file logging.
-[string]$Global:LoggingLocalDir = "C:\Temp" # Local log file log path.
+[string]$Global:LoggingLocalDir = "$env:USERPROFILE" # Local log file log path.
 [string]$Global:LoggingEventlog = $true # Enable Windows Eventlog logging.
 [int]$Global:LoggingEventlogId = 900 # Windows Eventlog ID used for logging.
 
