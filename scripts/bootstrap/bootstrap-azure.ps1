@@ -225,7 +225,7 @@ function Deploy-AzureServicePrincipal {
             # Append to global results.
             $global:totalResults += @{
                 ServicePrincipalName = $sp.DisplayName
-                TenantId = $spCheck.AppOwnerOrganizationId
+                TenantId = $sp.AppOwnerOrganizationId
                 ServicePrincipalAppId = $sp.AppId
                 ServicePrincipalSecret = $newSpCred.SecretText
             }
@@ -235,7 +235,7 @@ function Deploy-AzureServicePrincipal {
         }
     } else {
         Write-Log -Level "INF" -Stage $stage -Message "Creating service principal '$servicePrincipalName'."
-        $sp = New-AzADServicePrincipal -DisplayName $servicePrincipalName -Note $servicePrincipalDesc -ErrorAction Stop
+        $sp = New-AzADServicePrincipal -DisplayName $servicePrincipalName -ErrorAction Stop
         if ($sp) {
             Write-Log -Level "INF" -Stage $stage -Message "Service principal '$servicePrincipalName' created successfully."
 
