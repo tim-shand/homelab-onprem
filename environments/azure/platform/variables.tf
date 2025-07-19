@@ -33,10 +33,10 @@ variable "location_preferred" {
     type = string
     description = "Preferred Azure location for resources."
 }
-variable "tags" {
-  description = "A map of tags to apply to all resources."
-  type        = map(string)
-}
+#variable "tags" {
+#  description = "A map of tags to apply to all resources."
+#  type        = map(string)
+#}
 
 # Naming Conventions (using validations)
 variable "orgPrefix" {
@@ -62,4 +62,12 @@ variable "orgEnvironment" {
         condition = contains(["prd","dev","tst" ], var.orgEnvironment)
         error_message = "Valid value is one of the following: prd, dev, tst."
     }
+}
+variable "tagCreator" {
+    type = string
+    description = "Name of account creating resources."
+}
+variable "tagOwner" {
+    type = string
+    description = "Name of account creating resources."
 }

@@ -19,9 +19,9 @@ terraform {
     }
   }
   backend "azurerm" {
-    resource_group_name  = var.tfbackend_resourcegroup
-    storage_account_name = var.tfbackend_storageaccount
-    container_name       = var.tfbackend_container
+    resource_group_name  = "tjs-mgt-terraform-rg" #var.tfbackend_resourcegroup
+    storage_account_name = "tjsmgtterraform31728536" #var.tfbackend_storageaccount
+    container_name       = "tjs-mgt-terraform-tfstate" #var.tfbackend_container
   }
 }
 
@@ -33,5 +33,10 @@ provider "azapi" {
 }
 
 provider "azurerm" {
+  tenant_id       = var.tenant_id
+  subscription_id = var.subscription_id
+  client_id       = var.client_id
+  client_secret   = var.client_secret
+
   features {}
 }
