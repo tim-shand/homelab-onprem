@@ -1,59 +1,58 @@
 # Personal Home Lab
 
-_My personal home lab, running Proxmox and Kubernetes, configured/deployed using GitOps and IaC toolsets._
+_Welcome to my personal home lab! :wave:_
 
-The purpose of this homelab is provide an environment to self host and learn new technologies.
+## Purpose
 
-This homelab runs on Proxmox VE hypervisors, combined with virtualized Kubernetes nodes operating in a cluster.
-I also try leverage Azure services (Key Vault, App Registrations, Storage etc) where suitable.
-The physical simplicty of the lab reflects my minimalist-style mindset; small foot print and reduced clutter.
-I have always had a fondness for the small form factor/mini PCs.
-Being reasonably priced and fairly common, they make great additions to the lab as hosts.
+This home lab serves to provide an environment for self-hosting and experimenting with different technologies.  
+As my knowledge expands, I aim to include new and existing operational, design and security best practices where possible.  
+My intention is to utilize automation and DevOps methodologies to ensure a clean and reproducable environment. 
 
-Where feasible, I aim to keep in line with best practices.  
-As I develop my skills further, changes will likely occur and new additions will be made.  
+## :classical_building: Physical Hardware
 
-## Infrastructure
+- **Hypervisors**
+  - 1x HP EliteDesk G1 (Intel i5-4590T, 16 GB DDR3, 250 GB SSD).
+  - Running [Proxmox VE](https://www.proxmox.com/en/products/proxmox-virtual-environment/overview) in single node configuration (for now).
+  - In process of obtaining Lenovo Think Center P330 or Lenovo Think Center M720Q for additional dual-LAN capability.
+- **Networking**
+  - **Switch:** TP-Link TL-SG108PE 8-Port Gigabit Easy Smart PoE Switch.
 
-### Hypervisors
+## :robot: Virtualized Infrastructre
 
-- This is where Small Form Factor and Micro PCs shine.
-- HP EliteDesk G1 (Intel i5-4590T, 16 GB DDR3, 250 GB SSD).
-- Running [Proxmox VE](https://www.proxmox.com/en/products/proxmox-virtual-environment/overview) in single node configuration (for now).
+- **Firewall/Router:** Virtualized [pfSense](https://www.pfsense.org/download/) VM (for internal lab use).
+- **Virtual Machines:** Management servers, test VMs.
 
-### Networking
+## :cloud: Cloud/SaaS Resources
 
-- **Switch:** TP-Link TL-SG108PE 8-Port Gigabit Easy Smart PoE Switch
-- **Firewall/Router:** Virtualized [pfSense](https://www.pfsense.org/download/) VM (for internal lab use)
+- **Azure**
+  - Platform Landing Zone _(TO BE DEPLOYED)_.
+  - Identity platform (Entra ID) for Service Principals used in automation.
+- **Cloudflare**
+  - Several DNS zones are configured in Cloudflare, and used for various projects.
+- **Github**
+  - Housing the project and providing code repository.
+  - Github Actions for automation pipelines _(considering migration to Azure DevOps)_.
 
-### Kubernetes
-
-- Currently under development.
-- 1x Master Node (Control Plane)
-- 2x Worker Nodes
-
-## Deployment Tool Set
+## :dna: Deployment Tool Set
 
 - **Infrastructre-as-Code (IaC)**
-  - [Bicep](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/)
+  - **[Bicep](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/)** _(DECOM)_
     - Declarative, domain-specific-language (DSL) for the Azure platform.
     - Used to provision initial Azure resources required by Terraform (Storage Account) for utilizing a remote state/backend.
-  - [Terraform](https://www.terraform.io/)
-    - Free, easy to learn, agnostic IaC tool.
-    - Used to provision Proxmox virtual infrastructre (VMs, vNets) using the [BGP](https://registry.terraform.io/providers/bpg/proxmox/latest) provider.
-    - Also used to provision additonal Azure and Cloudflare resources.
-    - Chosen as it is provider agnostic, plenty of discussion, guides and support available.
+    - **EDIT:** In process of replacing Bicep with bootstrapping scripts.
+  - **[Terraform](https://www.terraform.io/)**
+    - Provider agnostic IaC tool, free to use, plenty of discussion, guides and support available.
+    - Used to provision Proxmox infrastructre using the [BGP](https://registry.terraform.io/providers/bpg/proxmox/latest) provider.
+    - Deploy and configure Azure and Cloudflare resources.
     - Other considerations: Pulumi (planning to investigate this further).
+  - **Bash/Powershell**
+    - Bootstrapping and utility scripts.
 
-- **Configuration**
-  - [Ansible](https://www.redhat.com/en/ansible-collaborative)
-    - Free to use configuration management tool.
-    - Maintain configuration states (install applications, deploy settings post deployment).
-    - Chosen due to the large amount of community discussion and support.
+## :hammer_and_wrench: To Do
 
-## To Do / Implement
-
-- [-] Migrate 'prep' to 'helpers' - using PS/AzureCLI for bootstrapping. 
+- [-] Migrate 'prep' directory using PS/AzureCLI/Bash for bootstrap and utility scripts. 
+- [ ] Review and update Terraform modules, code and structure.
+- [ ] Proxmox: Add additional hypervisors for clustering benefits (HA/failover).
+- [ ] Configure Azure landing zone.
 - [ ] Configure Monitoring and Observability.
 - [ ] Investigate implementing a SIEM for logging security events.
-- [ ] Add additional hypervisors for clustering benefits (HA/failover).
