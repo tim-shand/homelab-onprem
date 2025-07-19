@@ -16,7 +16,7 @@ My intention is to utilize automation and DevOps methodologies to ensure a clean
   - **Switch:** TP-Link TL-SG108PE 8-Port Gigabit Easy Smart PoE Switch.
   - Connecting hosts physically, providing outbound access to Internet routed out through home network.
 
-## :robot: Virtualized Infrastructre
+## :robot: Virtualized Infrastructure
 
 - **Firewall/Router:** Virtualized [pfSense](https://www.pfsense.org/download/) VM (for internal lab use).
 - **Virtual Machines:** Management servers, test and misc VMs.
@@ -25,14 +25,14 @@ My intention is to utilize automation and DevOps methodologies to ensure a clean
 
 - **Azure**
   - Platform Landing Zone _(TO BE DEPLOYED)_.
-  - Identity platform (Entra ID) for Service Principals used in automation.
+  - Identity platform (Entra ID) for Service Principals used in automation workflows.
 - **Cloudflare**
   - Several DNS zones are configured in Cloudflare, and used for various projects.
 - **Github**
   - Housing the project and providing code repository.
   - Github Actions for automation pipelines _(considering migration to Azure DevOps)_.
 
-## :dna: Deployment Tool Set
+## :hammer_and_wrench: Deployment Tool Set
 
 - **Infrastructre-as-Code (IaC)**
   - **[Bicep](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/)** _(DECOM)_
@@ -47,9 +47,9 @@ My intention is to utilize automation and DevOps methodologies to ensure a clean
   - **Bash/Powershell**
     - Bootstrapping and utility scripts.
 
-## :hammer_and_wrench: To Do
+## :memo: To Do
 
-- [-] Migrate 'prep' directory using PS/AzureCLI/Bash for bootstrap and utility scripts. 
+- [ ] Migrate 'prep' directory using PS/AzureCLI/Bash for bootstrap and utility scripts. 
 - [ ] Review and update Terraform modules, code and structure.
 - [ ] Proxmox: Add additional hypervisors for clustering benefits (HA/failover).
 - [ ] Configure Azure landing zone.
