@@ -26,7 +26,7 @@
 
 # Object for all results.
 $global:totalResults = @{}
-
+$EntraAdminGroup = "Sec-Global-Tenant-Contributors" # Entra ID group for tenant contributors.
 $orgPrefix = "tjs" # Short code name for the organization.
 $location = "australiaeast"
 $environment = "prd" # prd, dev, tst
@@ -43,13 +43,11 @@ $tags = @{
     created = (Get-Date -f 'yyyyMMddHHmmss');
     creator = "$($platform)-bootstrap";
 }
-[string]$tagString = ($tags.GetEnumerator() | ForEach-Object { "$($_.Key)=$($_.Value)" }) -join ' '
 $rootMGName = "Tenant Root Group" # Management Group name for the root management group.
 $resourceGroupName = "$orgPrefix-$platform-$service-rg" # Resource Group name
 $storageAccountName = "$orgPrefix$($platform)$($service)$(Get-Random -Minimum 10000000 -Maximum 99999999)" # Random suffix, max 24 characters
 $containerName = "$orgPrefix-$platform-$service-tfstate" # Blob Container name
 $servicePrincipalName = "$orgPrefix-$platform-$service-sp" # Service Principal name
-$servicePrincipalDesc = "Service Principal for '$($service)' bootstrap script." # Service Principal Description
 
 #==========================================================================#
 # FUNCTIONS
@@ -173,43 +171,38 @@ function Rename-DefaultSubscription {
 
 # Function: Check for, and install required resources.
 function Deploy-AzureResources {
-    param (
-        [string]$resourceGroupName = $resourceGroupName,
-        [string]$location = $location,
-        [string]$storageAccountName = $storageAccountName,
-        [string]$containerName = $containerName,
-        [hashtable]$tags = $tags
-    )
     $stage = "Deploy-AzureBootstrap"
     Write-Log -Level "INF" -Stage "Deploy" -Message "Starting Azure resource deployment..."
 
     # Resource Group: Check if the resource group already exists, create if not present.
-    $rgCheck = Get-AzResourceGroup -Name $resourceGroupName -ErrorAction SilentlyContinue
-    if ($rgCheck) {
+    $rg = Get-AzResourceGroup -Name $resourceGroupName -ErrorAction SilentlyContinue
+    if ($rg) {
         Write-Log -Level "WRN" -Stage $stage -Message "Resource group '$resourceGroupName' already exists. Skip."
     } else {
-        Write-Log -Level "INF" -Stage $stage -Message "Creating resource group '$resourceGroupName'."
-        New-AzResourceGroup -Name $resourceGroupName -Location $location -Tags $tags -ErrorAction Stop
+        $rg = New-AzResourceGroup -Name $resourceGroupName -Location $location -Tags $tags -ErrorAction Stop
+        Write-Log -Level "INF" -Stage $stage -Message "Created resource group '$resourceGroupName'."
     }
 
     # Storage Account: Check if the storage account already exists, create if not present.
-    $saCheck = Get-AzStorageAccount -Name $storageAccountName -ResourceGroupName $resourceGroupName -ErrorAction SilentlyContinue
-    if ($saCheck) {
+    $storageAccount = Get-AzStorageAccount -Name $storageAccountName -ResourceGroupName $resourceGroupName -ErrorAction SilentlyContinue
+    if ($storageAccount) {
         Write-Log -Level "WRN" -Stage $stage -Message "Storage account '$storageAccountName' already exists. Skip."
     } else {
         Write-Log -Level "INF" -Stage $stage -Message "Creating storage account '$storageAccountName'."
-        New-AzStorageAccount -Name $storageAccountName -ResourceGroupName $resourceGroupName -Location $location -SkuName "Standard_LRS" -Tags $tags -ErrorAction Stop
+        $storageAccount = New-AzStorageAccount -Name $storageAccountName -ResourceGroupName $resourceGroupName `
+            -Location $location -SkuName "Standard_LRS" -Tags $tags -ErrorAction Stop
     }
 
     # Blob Container: Check if the blob container already exists, create if not present.
     $storageContext = (New-AzStorageContext -StorageAccountName $storageAccountName)
-    $containerCheck = Get-AzStorageContainer -Name $containerName -Context $storageContext -ErrorAction SilentlyContinue
-    if ($containerCheck) {
+    $saContainer = Get-AzStorageContainer -Name $containerName -Context $storageContext -ErrorAction SilentlyContinue
+    if ($saContainer) {
         Write-Log -Level "WRN" -Stage $stage -Message "Blob container '$containerName' already exists. Skip."
     } else {
         Write-Log -Level "INF" -Stage $stage -Message "Creating blob container '$containerName'."
-        New-AzStorageContainer -Name $containerName -Context $storageContext -ErrorAction Stop
+        $saContainer = New-AzStorageContainer -Name $containerName -Context $storageContext -ErrorAction Stop
     }
+
     # Append to global results.
     $global:totalResults += @{
         Location = $location
@@ -219,35 +212,30 @@ function Deploy-AzureResources {
     }
 }
 
+# Function: Deploy Azure Service Principal.
 function Deploy-AzureServicePrincipal {
-    param (
-        [string]$servicePrincipalName = $servicePrincipalName,
-        [string]$servicePrincipalDesc = $servicePrincipalDesc
-    )
     $stage = "Deploy-AzureServicePrincipal"
-
     # Service Principal: Check if the service principal already exists, create if not present.
-    $spCheck = Get-AzADServicePrincipal -DisplayName $servicePrincipalName -ErrorAction SilentlyContinue
-    if ($spCheck) {
-        Write-Log -Level "WRN" -Stage $stage -Message "Service principal '$servicePrincipalName' already exists. Regenerating credenital..."
-        $newSpCred = (New-AzADAppCredential -ApplicationId f2e3cd69-26c6-43b9-8eb0-d6c575a2da3b).SecretText
+    $sp = Get-AzADServicePrincipal -DisplayName $servicePrincipalName -ErrorAction SilentlyContinue
+    if ($sp) {
+        Write-Log -Level "WRN" -Stage $stage -Message "Service principal '$servicePrincipalName' already exists. Regenerating credential..."
+        $newSpCred = (New-AzADAppCredential -ApplicationId $sp.AppId -EndDate (Get-Date).AddYears(1) -ErrorAction Stop)
         if ($newSpCred) {
             Write-Log -Level "INF" -Stage $stage -Message "Service principal '$servicePrincipalName' credential regenerated successfully."
             # Append to global results.
             $global:totalResults += @{
-                ServicePrincipalName = $spCheck.DisplayName
-                ServicePrincipalTenantId = $spCheck.TenantId
-                ServicePrincipalAppId = $spCheck.AppId
-                ServicePrincipalSecret = $newSpCred
+                ServicePrincipalName = $sp.DisplayName
+                TenantId = $spCheck.AppOwnerOrganizationId
+                ServicePrincipalAppId = $sp.AppId
+                ServicePrincipalSecret = $newSpCred.SecretText
             }
         } else {
             Write-Log -Level "ERR" -Stage $stage -Message "Failed to regenerate service principal '$servicePrincipalName' credential."
             exit 1
         }
-        $sp = $spCheck
     } else {
         Write-Log -Level "INF" -Stage $stage -Message "Creating service principal '$servicePrincipalName'."
-        $sp = New-AzADServicePrincipal -DisplayName $servicePrincipalName -ErrorAction Stop
+        $sp = New-AzADServicePrincipal -DisplayName $servicePrincipalName -Note $servicePrincipalDesc -ErrorAction Stop
         if ($sp) {
             Write-Log -Level "INF" -Stage $stage -Message "Service principal '$servicePrincipalName' created successfully."
 
@@ -300,11 +288,11 @@ Get-AzureLogin
 
 # Deploy Resources.
 Rename-DefaultSubscription
-Deploy-AzureResources -resourceGroupName $resourceGroupName -location $location -storageAccountName $storageAccountName -containerName $containerName -tags $tags
-Deploy-AzureServicePrincipal -servicePrincipalName $servicePrincipalName
+Deploy-AzureServicePrincipal
+Deploy-AzureResources
 
 # Output all details.
-$global:totalResults | fl
+$global:totalResults | ft
 
 # End
 Write-Log -Level "INF" -Stage "END" -Message "Utility script execution completed."
