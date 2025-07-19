@@ -28,8 +28,9 @@ $orgPrefix = "tjs" # Short code name for the organization.
 $location = "australiaeast"
 $environment = "prd" # prd, dev, tst
 $platform = "mgt" # sys, app, web, inf, sec
-$project = "alzplatform" # alz-platform, alz-app, alz-web
+$project = "lzplatform" # lzplatform, lzapp, lzweb
 $service = "terraform" # terraform, ansible, kubernetes, security
+$subNameNew = "$orgPrefix-$platform-$service-sub" # New subscription name.
 $tags = @{ 
     environment = $environment;
     owner = "$($platform)-bootstrap";
@@ -40,10 +41,12 @@ $tags = @{
     creator = "$($platform)-bootstrap";
 }
 [string]$tagString = ($tags.GetEnumerator() | ForEach-Object { "$($_.Key)=$($_.Value)" }) -join ' '
+$rootMGName = "Tenant Root Group" # Management Group name for the root management group.
 $resourceGroupName = "$orgPrefix-$platform-$service-rg" # Resource Group name
 $storageAccountName = "$orgPrefix$($platform)$($service)$(Get-Random -Minimum 10000000 -Maximum 99999999)" # Random suffix, max 24 characters
 $containerName = "$orgPrefix-$platform-$service-tfstate" # Blob Container name
 $servicePrincipalName = "$orgPrefix-$platform-$service-sp" # Service Principal name
+$servicePrincipalDesc = "Service Principal for '$($service)' bootstrap script." # Service Principal Description
 
 #==========================================================================#
 # FUNCTIONS
@@ -113,31 +116,12 @@ function Get-AzureCLI {
 
 # Function: Check login to Azure.
 function Get-AzureLogin {
-    $stage = "Get-AzureLogin"
-    try {
-        $context = Get-AzContext -ErrorAction Stop
-        Write-Log -Level "INF" -Stage $stage -Message "Logged in to Azure as $($context.Account.Id)."
-    } catch {
-        $session = Connect-AzAccount -ErrorAction Stop
-        if ($session) {
-            Write-Log -Level "INF" -Stage $stage -Message "Successfully logged in to Azure."
-        } else {
-            Write-Log -Level "ERR" -Stage $stage -Message "Failed to log in to Azure. Please run 'Connect-AzAccount' and try again."
-            exit 1
-        }
-        Write-Log -Level "ERR" -Stage $stage -Message "Not logged in to Azure. Please run 'Connect-AzAccount' and try again."
-        exit 1
-    }
-}
-
-function Get-AzureLogin {
-    $azSession = (Get-AzContext -ErrorAction Stop)
-    if ($azSession) {
-        Write-Log -Level "INF" -Stage "Get-AzureLogin" -Message "Logged in to Azure as $($azSession.Account.Id)."
+    $global:azSession = (Get-AzContext -ErrorAction Stop)
+    if ($global:azSession) {
+        Write-Log -Level "INF" -Stage "Get-AzureLogin" -Message "Logged in to Azure as $($global:azSession.Account.Id)."
         return $currentSession
     } else{
-        $azConnection = Connect-AzAccount -ErrorAction Stop
-        $azSession = (Get-AzContext -ErrorAction Stop)
+        $azConnection = Connect-AzAccount -ErrorAction Stop        
         if ($azConnection) {
             do {
                 $userResponse = (Read-Host -Prompt "Proceed as '$($currentSession.Account)' in tenant '$($currentSession.TenantDomain)' [Y/N]")
@@ -148,7 +132,7 @@ function Get-AzureLogin {
                         Write-Log -Level "ERR" -Stage "Get-AzureLogin" -Message "User cancelled Azure login. Abort."
                         exit 1
                     } else{
-                        $azSession = (Get-AzContext -ErrorAction Stop)
+                        $global:azSession = (Get-AzContext -ErrorAction Stop)
                         Write-Log -Level "INF" -Stage "Get-AzureLogin" -Message "Successfully logged in to Azure."
                     }
                 }
@@ -163,6 +147,19 @@ function Get-AzureLogin {
     }
 }
 
+# Function: Rename default subscription.
+function Rename-DefaultSubscription {
+    $stage = "Rename-DefaultSubscription"
+    $defaultSub = Get-AzSubscription -SubscriptionId $($global:azSession.Subscription.Id) -ErrorAction SilentlyContinue
+    if ($defaultSub) {
+        Set-AzSubscription -SubscriptionId $defaultSub.Id -Name $subNameNew -ErrorAction Stop
+        Write-Log -Level "INF" -Stage $stage -Message "Renamed default subscription to '$($subNameNew)'."
+    } else {
+        Write-Log -Level "WRN" -Stage $stage -Message "Default subscription not found. Skipping rename."
+    }
+}
+
+# Function: Check for, and install required resources.
 function Deploy-AzureResources {
     param (
         [string]$resourceGroupName = $resourceGroupName,
@@ -205,7 +202,8 @@ function Deploy-AzureResources {
 
 function Deploy-AzureServicePrincipal {
     param (
-        [string]$servicePrincipalName = $servicePrincipalName
+        [string]$servicePrincipalName = $servicePrincipalName,
+        [string]$servicePrincipalDesc = $servicePrincipalDesc
     )
     $stage = "Deploy-AzureServicePrincipal"
 
@@ -225,17 +223,17 @@ function Deploy-AzureServicePrincipal {
     }
 
     # Assign Role: Assign 'Contributor' role to the service principal on the tenant root management group.
-    $mg = Get-AzManagementGroup -GroupName "Tenant Root Group" -ErrorAction SilentlyContinue
-    if ($mg) {
-        $roleAssignment = New-AzRoleAssignment -ObjectId $sp.Id -RoleDefinitionName "Contributor" -Scope $mg.Id -ErrorAction Stop
+    $rootMG = Get-AzManagementGroup | ?{$_.DisplayName -eq $rootMGName}
+    if ($rootMG) {
+        $roleAssignment = New-AzRoleAssignment -ObjectId $sp.Id -RoleDefinitionName "Contributor" -Scope $rootMG.Id -ErrorAction Stop
         if ($roleAssignment) {
-            Write-Log -Level "INF" -Stage $stage -Message "Assigned 'Contributor' role to service principal '$servicePrincipalName' on management group '$($mg.DisplayName)'."
+            Write-Log -Level "INF" -Stage $stage -Message "Assigned 'Contributor' role to service principal '$servicePrincipalName' on management group '$($rootMG.DisplayName)'."
         } else {
             Write-Log -Level "ERR" -Stage $stage -Message "Failed to assign role to service principal '$servicePrincipalName'."
             exit 1
         }
     } else {
-        Write-Log -Level "ERR" -Stage $stage -Message "Management group 'Tenant Root Group' not found."
+        Write-Log -Level "ERR" -Stage $stage -Message "Management group '$rootMGName' not found."
         exit 1
     }
 }
@@ -258,6 +256,7 @@ Get-AzureCLI
 Get-AzureLogin
 
 # Deploy Resources.
+Rename-DefaultSubscription
 Deploy-AzureResources -resourceGroupName $resourceGroupName -location $location -storageAccountName $storageAccountName -containerName $containerName -tags $tags
 Deploy-AzureServicePrincipal -servicePrincipalName $servicePrincipalName
 
