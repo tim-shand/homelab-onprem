@@ -28,9 +28,9 @@ $orgPrefix = "tjs" # Short code name for the organization.
 $location = "australiaeast"
 $environment = "prd" # prd, dev, tst
 $platform = "mgt" # sys, app, web, inf, sec
-$project = "lzplatform" # lzplatform, lzapp, lzweb
+$project = "platform" # platform, app, web
 $service = "terraform" # terraform, ansible, kubernetes, security
-$subNameNew = "$orgPrefix-$platform-$service-sub" # New subscription name.
+$subNameNew = "$orgPrefix-$platform-$project-sub" # New subscription name.
 $tags = @{ 
     environment = $environment;
     owner = "$($platform)-bootstrap";
@@ -152,8 +152,13 @@ function Rename-DefaultSubscription {
     $stage = "Rename-DefaultSubscription"
     $defaultSub = Get-AzSubscription -SubscriptionId $($global:azSession.Subscription.Id) -ErrorAction SilentlyContinue
     if ($defaultSub) {
-        Set-AzSubscription -SubscriptionId $defaultSub.Id -Name $subNameNew -ErrorAction Stop
-        Write-Log -Level "INF" -Stage $stage -Message "Renamed default subscription to '$($subNameNew)'."
+        $renameSub = (Rename-AzSubscription -Id $defaultSub.Id -SubscriptionName $subNameNew -ErrorAction SilentlyContinue)
+        if ($renameSub) {
+            Write-Log -Level "INF" -Stage $stage -Message "Default subscription renamed to '$($subNameNew)'."
+        } else {
+            Write-Log -Level "ERR" -Stage $stage -Message "Failed to rename default subscription. Please try again."
+            exit 1
+        }
     } else {
         Write-Log -Level "WRN" -Stage $stage -Message "Default subscription not found. Skipping rename."
     }
@@ -211,30 +216,32 @@ function Deploy-AzureServicePrincipal {
     $spCheck = Get-AzADServicePrincipal -DisplayName $servicePrincipalName -ErrorAction SilentlyContinue
     if ($spCheck) {
         Write-Log -Level "WRN" -Stage $stage -Message "Service principal '$servicePrincipalName' already exists. Skip."
+        $sp = $spCheck
     } else {
         Write-Log -Level "INF" -Stage $stage -Message "Creating service principal '$servicePrincipalName'."
-        $sp = New-AzADServicePrincipal -DisplayName $servicePrincipalName -ErrorAction Stop
+        $sp = New-AzADServicePrincipal -DisplayName $servicePrincipalName -Description $servicePrincipalDesc -Note $servicePrincipalDesc -ErrorAction Stop
         if ($sp) {
             Write-Log -Level "INF" -Stage $stage -Message "Service principal '$servicePrincipalName' created successfully."
+
+            # Assign Role: Assign 'Contributor' role to the service principal on the tenant root management group.
+            $rootMG = Get-AzManagementGroup | ?{$_.DisplayName -eq $rootMGName}
+            if ($rootMG) {
+                $roleAssignment = New-AzRoleAssignment -ObjectId $sp.Id -RoleDefinitionName "Contributor" -Scope $rootMG.Id -ErrorAction Stop
+                if ($roleAssignment) {
+                    Write-Log -Level "INF" -Stage $stage -Message "Assigned 'Contributor' role to service principal '$servicePrincipalName' on management group '$($rootMG.DisplayName)'."
+                } else {
+                    Write-Log -Level "ERR" -Stage $stage -Message "Failed to assign role to service principal '$servicePrincipalName'."
+                    exit 1
+                }
+            } else {
+                Write-Log -Level "ERR" -Stage $stage -Message "Management group '$rootMGName' not found."
+                exit 1
+            }
+
         } else {
             Write-Log -Level "ERR" -Stage $stage -Message "Failed to create service principal '$servicePrincipalName'."
             exit 1
         }
-    }
-
-    # Assign Role: Assign 'Contributor' role to the service principal on the tenant root management group.
-    $rootMG = Get-AzManagementGroup | ?{$_.DisplayName -eq $rootMGName}
-    if ($rootMG) {
-        $roleAssignment = New-AzRoleAssignment -ObjectId $sp.Id -RoleDefinitionName "Contributor" -Scope $rootMG.Id -ErrorAction Stop
-        if ($roleAssignment) {
-            Write-Log -Level "INF" -Stage $stage -Message "Assigned 'Contributor' role to service principal '$servicePrincipalName' on management group '$($rootMG.DisplayName)'."
-        } else {
-            Write-Log -Level "ERR" -Stage $stage -Message "Failed to assign role to service principal '$servicePrincipalName'."
-            exit 1
-        }
-    } else {
-        Write-Log -Level "ERR" -Stage $stage -Message "Management group '$rootMGName' not found."
-        exit 1
     }
 }
 

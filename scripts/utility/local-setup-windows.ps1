@@ -33,7 +33,7 @@ $requiredApps += [pscustomobject] @{Name = "Fake-Test-App"; Cmd = "Fake-Test-App
 $requiredApps += [pscustomobject] @{Name = "GitHub CLI"; Cmd = "gh"; WinGetName = "GitHub.cli"}
 
 # Define required Powershell modules.
-$requiredPSModules = @("Az","Microsoft.Entra")
+$requiredPSModules = @("Az","Microsoft.Entra","Az.Subscription")
 
 #------------------------------------------------#
 # FUNCTIONS
