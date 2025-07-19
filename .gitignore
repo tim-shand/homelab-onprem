@@ -4,6 +4,7 @@
 .config
 *.log
 *.test/
+*.dev/
 
 # Environments
 .env
