@@ -247,7 +247,7 @@ function Add-AzureServicePrincipal {
             }
 
             # Assign Role: Assign 'Contributor' role to the service principal on the tenant root management group.
-            $rootMG = Get-AzManagementGroup | ?{$_.DisplayName -eq $rootMGName}
+            $rootMG = Get-AzManagementGroup | Where-Object{$_.DisplayName -eq $rootMGName}
             if ($rootMG) {
                 $roleAssignment = New-AzRoleAssignment -ObjectId $sp.Id -RoleDefinitionName "Contributor" -Scope $rootMG.Id -ErrorAction Stop
                 if ($roleAssignment) {
