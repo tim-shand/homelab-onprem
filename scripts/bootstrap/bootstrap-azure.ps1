@@ -26,7 +26,6 @@
 
 # Object for all results.
 $global:totalResults = @{}
-$EntraAdminGroup = "Sec-Global-Tenant-Contributors" # Entra ID group for tenant contributors.
 $orgPrefix = "tjs" # Short code name for the organization.
 $location = "australiaeast"
 $environment = "prd" # prd, dev, tst
@@ -170,7 +169,7 @@ function Rename-DefaultSubscription {
 }
 
 # Function: Check for, and install required resources.
-function Deploy-AzureResources {
+function Add-AzureResources {
     $stage = "Deploy-AzureBootstrap"
     Write-Log -Level "INF" -Stage "Deploy" -Message "Starting Azure resource deployment..."
 
@@ -213,7 +212,7 @@ function Deploy-AzureResources {
 }
 
 # Function: Deploy Azure Service Principal.
-function Deploy-AzureServicePrincipal {
+function Add-AzureServicePrincipal {
     $stage = "Deploy-AzureServicePrincipal"
     # Service Principal: Check if the service principal already exists, create if not present.
     $sp = Get-AzADServicePrincipal -DisplayName $servicePrincipalName -ErrorAction SilentlyContinue
@@ -288,11 +287,11 @@ Get-AzureLogin
 
 # Deploy Resources.
 Rename-DefaultSubscription
-Deploy-AzureServicePrincipal
-Deploy-AzureResources
+Add-AzureServicePrincipal
+Add-AzureResources
 
 # Output all details.
-$global:totalResults | ft
+$global:totalResults | format-table
 
 # End
 Write-Log -Level "INF" -Stage "END" -Message "Utility script execution completed."
