@@ -43,7 +43,7 @@ $tags = @{
     creator = "$($platform)-bootstrap";
 }
 $rootMGName = "Tenant Root Group" # Management Group name for the root management group.
-$resourceGroupName = "$orgPrefix-$platform-$service-rg" # Resource Group name
+$resourceGroupName = "$orgPrefix-$platform-$service-$environment-rg" # Resource Group name
 $storageAccountName = "$orgPrefix$($platform)$($service)$(Get-Random -Minimum 10000000 -Maximum 99999999)" # Random suffix, max 24 characters
 $containerName = "$orgPrefix-$platform-$service-tfstate" # Blob Container name
 $servicePrincipalName = "$orgPrefix-$platform-$service-sp" # Service Principal name
