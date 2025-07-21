@@ -1,12 +1,13 @@
 #! /bin/bash
 #=====================================================#
-# Bootstrap: Azure Tenant (Windows PowerShell)
+# Bootstrap: Azure Tenant (Bash / Linux)
 #=====================================================#
 
 # DESCRIPTION:
 # Azure Tenant Bootstrap Script for Terraform Backend.
-# Sets up a Terraform backend in Azure using Storage Account and Blob Container.
-# It also creates a Service Principal for CI/CD and Terraform integration.
+# Creates a new Entra ID Group with Contributor assignment at tenant root.
+# Creates a Service Principal for CI/CD and Terraform integration, add to above group.
+# Configuresa Terraform remote backend in Azure using Storage Account and Blob Container.
 
 # NOTE: 
 # Requires administrator privileges to run.
@@ -42,8 +43,8 @@ defaultSubNameNew="$orgPrefix-$platform-$project-$environment" # New subscriptio
 
 # Azure: Service Principal and Entra Groups
 servicePrincipalName="$orgPrefix-$platform-$service-sp" # Service Principal name
-declare -A entraGroups
-entraGroups[Sec-Role-Global-Contributors]="Security group for privileged Service Principals to assign contributor role at tenant level."
+entraGroupName="Sec-RBAC-Global-Contributors"
+entraGroupDesc="Security group for privileged identities to assign contributor (RBAC) role at tenant level."
 
 # Azure: Resource Group, Storage Account, and Blob Container
 location="australiaeast"
@@ -51,7 +52,7 @@ resourceGroupName="$orgPrefix-$platform-$service-$environment-rg" # Resource Gro
 storageAccountName="${orgPrefix}${platform}${service}${environment}$(shuf -i 10000-99999 -n 1)" # Random suffix, max 24 characters
 containerName="$orgPrefix-$platform-$service-tfstate" # Blob Container name
 
-# Tags: Declare the associative array
+# Tags: Declare using associative array
 declare -A tags=(
     [environment]="$environment"
     [owner]="$tagOwner"
@@ -66,51 +67,88 @@ declare -A tags=(
 # FUNCTIONS
 #==========================================================================#
 
-# Function: Create/check Entra ID groups.
-config_entra_groups(){
-  local $entraGroups=$1
-  for groupName in "${!entraGroups[@]}"; do
-      newEntraGroup=$(az ad group create --display-name "$groupName" --mail-nickname "$groupName" --description "${entraGroups[$groupName]}" > /dev/null)
-      newEntraGroupId=$(az ad group show --group "$groupName" --query "id" --output tsv)
-      if [[ -n "$newEntraGroupId" ]]; then
-        # Assign group as 'Contributor' to tenant root management group.
-        groupRoleAssign=$(az role assignment create --assignee "$newEntraGroupId" --role Contributor --scope "$root_mg_id" > /dev/null)
-        echo $groupName
-      fi
-  done
+# Function: Get tenant root management group ID.
+get_tenant_root_mg(){
+  root_mg_id=$(az account management-group list --query "[?displayName=='$rootMGName'].id" -o tsv)
+  if [[ -z "$root_mg_id" ]]; then
+    echo -e "${RED}ERROR: Tenant Root Group not found. Abort.${NC}"
+    exit 1
+  fi
 }
 
-# Function: Create/Check Service Principal.
-config_service_principal(){
-  local $servicePrincipalName=$1
-  local $root_mg_id=$2
-  local $group_assign=$3
-  service_principal=$(az ad sp create-for-rbac --name "$servicePrincipalName" --role "Contributor" --scopes "$root_mg_id" > /dev/null)
-  memberAdd=$(az ad group member add --group "$group_assign" --member-id $service_principal_oid > /dev/null)
-  echo $service_principal
+# Function: Create Entra ID group for RBAC 'Contributor' at ternant root.
+create_entra_group(){
+  entra_group=$(az ad group create --display-name "$entraGroupName" --mail-nickname "$entraGroupName" --description "$entraGroupDesc")
+  if [[ -z "$entra_group" ]]; then
+    echo -e "${RED}ERROR: Failed to configure Entra group '$entraGroupName'. Abort. ${NC}"
+    exit 1
+  else
+    # Get group ID. Assign 'Contributor' role to group at tenant root managment group.
+    entra_group_id=$(az ad group show --group "$entraGroupName" --query "id" --output tsv)
+    group_role_assignment=$(az role assignment create --assignee-object-id "$entra_group_id" --role Contributor --scope "$root_mg_id")
+    if [[ -z "$group_role_assignment" ]]; then
+      echo -e "${RED}ERROR: Failed to assign role for Entra group '$entraGroupName'. Abort. ${NC}"
+      exit 1
+    fi
+  fi
 }
+
+# Function: Create Serivce Principal for Terraform, deployments, CI/CD etc.
+create_service_principal(){
+  sp=$(az ad sp create-for-rbac --name "$servicePrincipalName")
+  if [[ -z "$sp" ]]; then
+    echo -e "${RED}ERROR: Failed to configure Service Principal. Abort. ${NC}"
+    exit 1
+  else
+    sp_oid=$(az ad sp show --id $(echo "$sp" | jq -r '.appId') --query "id" -o tsv)
+    # Assign Service Principal to Entra group using objectID.
+    memberCheck=$(az ad group member check --group "$entraGroupName" --member-id $sp_oid)
+    is_member=$(echo "$memberCheck" | jq -r '.value')
+    if [[ "$is_member" == "false" ]]; then
+      memberAdd=$(az ad group member add --group "$entraGroupName" --member-id $sp_oid)
+      # Re-Check group membership after add.
+      memberCheck2=$(az ad group member check --group "$entraGroupName" --member-id $sp_oid)
+      is_member2=$(echo "$memberCheck2" | jq -r '.value')
+      if [[ "$is_member2" == "false" ]]; then
+        echo -e "${RED}ERROR: Failed to add Service Principal to group '$entraGroupName'. Abort. ${NC}"
+      fi
+    fi
+  fi
+}
+
 
 #------------------------------------------------#
 # MAIN SCRIPT EXECUTION
 #------------------------------------------------#
 
-# Get tenant root management group.
-root_mg_id=$(az account management-group list --query "[?displayName=='$rootMGName'].id" -o tsv)
-if [[ -n "$root_mg_id" ]]; then
-  echo -e "${GREEN}INFO: Tenant Root Group found: $root_mg_id ${NC}"
-else
-  echo -e "${RED}ERROR:Tenant Root Group not found. Abort. ${NC}"
-  exit 1
-fi
+# Main: Run functions.
+get_tenant_root_mg
+create_entra_group
+create_service_principal
 
-# Configure Entra Groups.
-entra_groups=$(config_entra_groups "$entraGroups")
+# TO DO:
+# rename_default_sub
+# create_terraform_backend
 
-# Configure Service Principal.
-service_principal=$(config_service_principal "$servicePrincipalName" "$root_mg_id" "$entra_groups")
-if [[ -n "$service_principal" ]]; then
-  echo -e "${GREEN}INFO: Service Principal configured: $service_principal ${NC}"
-else
-  echo -e "${RED}ERROR: Failed to configure Service Principal. Abort. ${NC}"
-  exit 1
-fi
+# Results/Output.
+echo -e "${YELLOW}#=============================================================#"
+echo -e "${GREEN}                    Azure Bootstrap Script"
+echo -e "${YELLOW}#=============================================================#"
+echo
+#echo -e "${YELLOW}Tenant Root Group:${NC} $root_mg_id"
+echo -e "${YELLOW}[Default Subscription] ID:${NC} "
+echo -e "${YELLOW}[Default Subscription] Name:${NC} "
+echo
+echo -e "${YELLOW}[Entra] Contributors Group:${NC} $entraGroupName"
+echo 
+echo -e "${YELLOW}[Service Principal] Name:${NC} $(echo "$sp" | jq -r '.displayName')"
+echo -e "${YELLOW}[Service Principal] Tenant:${NC} $(echo "$sp" | jq -r '.tenant')"
+echo -e "${YELLOW}[Service Principal] AppId:${NC} $(echo "$sp" | jq -r '.appId')"
+echo -e "${YELLOW}[Service Principal] Secret:${NC} $(echo "$sp" | jq -r '.password')"
+echo 
+echo -e "${YELLOW}[Terraform] Resource Group:${NC} "
+echo -e "${YELLOW}[Terraform] Storage Account:${NC} "
+echo -e "${YELLOW}[Terraform] Container:${NC} "
+echo
+echo -e "${YELLOW}#=============================================================#"
+# clear && ./scripts/bootstrap/bootstrap-azure.sh
