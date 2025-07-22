@@ -92,6 +92,11 @@ fi
 # Call the function to install required applications.
 installRequiredApps
 
+# Install Azure CLI extensions.
+az config set extension.dynamic_install_allow_preview=true
+az extension add --upgrade -n account
+
+
 echo
 echo -e "${YELLOW}=============== Utility Script: Complete ===============${NC}"
 echo
