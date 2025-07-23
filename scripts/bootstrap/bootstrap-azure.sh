@@ -51,6 +51,7 @@ location="australiaeast"
 resourceGroupName="$orgPrefix-$platform-$service-$environment-rg" # Resource Group name
 storageAccountName="${orgPrefix}${platform}${service}${environment}$(shuf -i 10000-99999 -n 1)" # Random suffix, max 24 characters
 containerName="$orgPrefix-$platform-$service-tfstate" # Blob Container name
+keyvaultName="$orgPrefix-$platform-$project-kv" # Keyvault name
 
 # Tags: Declare using associative array
 declare -A tags=(
@@ -112,11 +113,17 @@ create_entra_group(){
   else
     # Get group ID. Assign 'Contributor' role to group at tenant root managment group.
     entra_group_id=$(az ad group show --group "$entraGroupName" --query "id" --output tsv)
-    group_role_assignment=$(az role assignment create --assignee-object-id "$entra_group_id" \
-      --role Contributor --scope "$root_mg_id" --only-show-errors)
+    group_role_assignment=$(az role assignment create --assignee-object-id "$entra_group_id" --role Contributor --scope "$root_mg_id" --only-show-errors)
     if [[ -z "$group_role_assignment" ]]; then
       echo -e "${RED}FATAL: Failed to assign required role for Entra group '$entraGroupName'. Please investigate or assign manually. ${NC}"
       exit 1
+    fi
+    # Assign current logged in user as member.
+    currentUserAdd=$(az ad group member add --group "$entraGroupName" --member-id "$(az ad signed-in-user show --query id --output tsv)")
+    currentUserCheck=$(az ad group member check --group "$entraGroupName" --member-id "$(az ad signed-in-user show --query id --output tsv)")
+    if [[ "$currentUserCheck" == "false" ]]; then
+        echo -e "${RED}ERROR: Failed to add current user to group '$entraGroupName'. Please investigate or assign manually. Skip.${NC}"
+        exit 1
     fi
   fi
 }
@@ -149,18 +156,17 @@ create_service_principal(){
 deploy_terraform_backend(){
   resource_group=$(az group create --name "$resourceGroupName" --location $location --tags $tag_string)
   if [[ -z "$resource_group" ]]; then
-    echo -e "${RED}FATAL: Failed create Resource Group '$resourceGroupName'. Please investigate or create manually. ${NC}"
+    echo -e "${RED}FATAL: Failed create Resource Group '$resourceGroupName'. Please investigate or create manually.${NC}"
     exit 1
   else
-    echo -e "${GREEN} --- Created Resource Group ($(echo $resource_group | jq -r '.name'))...${NC}"
+    echo -e "${GREEN}--- Created Resource Group ($(echo $resource_group | jq -r '.name'))...${NC}"
     # Proceed to create Storage Account.
-    storage_account=$(az storage account create --name $storageAccountName --resource-group "$resourceGroupName" \
-      --access-tier Hot --tags $tag_string --sku Standard_LRS)
+    storage_account=$(az storage account create --name $storageAccountName --resource-group "$resourceGroupName" --access-tier Hot --tags $tag_string --sku Standard_LRS)
     if [[ -z "$storage_account" ]]; then
       echo -e "${RED}FATAL: Failed create required Storage Account '$storageAccountName'. Please investigate or create manually.${NC}"
       exit 1
     else
-      echo -e "${GREEN} --- Created Storage Account ($(echo $storage_account | jq -r '.name'))...${NC}"
+      echo -e "${GREEN}--- Created Storage Account ($(echo $storage_account | jq -r '.name'))...${NC}"
       # Proceed with creating Container.
       container_created=$(az storage container create --name $containerName --account-name "$(echo $storage_account | jq -r '.name')" --auth-mode login)
       if [[ -z "$container_created" ]]; then
@@ -169,11 +175,47 @@ deploy_terraform_backend(){
       else
         if [[ $(echo $container_created | jq -r '.created') == 'true' ]]; then
           container=$(az storage container show --name "$containerName" --account-name "$(echo $storage_account | jq -r '.name')" --auth-mode login)
-          echo -e "${GREEN} --- Created Storage Container ($(echo $container | jq -r '.name'))...${NC}."
+          echo -e "${GREEN}--- Created Storage Container ($(echo $container | jq -r '.name'))...${NC}."
         else
-          echo -e "${GREEN} --- Storage Container ($(echo $container | jq -r '.name')) already exists...${NC}."
+          echo -e "${GREEN}--- Storage Container ($(echo $container | jq -r '.name')) already exists...${NC}."
           container=$containerName
         fi
+      fi
+    fi
+
+    # Proceed with KeyVault.
+    key_vault_check=$(az keyvault show --name "$keyvaultName")
+    if [[ -z "$key_vault_check" ]]; then
+      # Create Keyvault.
+      key_vault=$(az keyvault create --name "$keyvaultName" --resource-group "$resourceGroupName" --location $location --tags $tag_string)
+      if [[ -z "$key_vault" ]]; then
+        echo -e "${RED}ERROR: Failed to create Key Vault '$keyvaultName'. Please investigate or create manually. Skip.${NC}"
+      else
+        echo -e "${GREEN}--- Created Key Vault ($(echo $key_vault | jq -r '.name'))...${NC}"
+        # Create role assignment.
+        kv_role_assignment=$(az role assignment create --assignee-object-id "$entra_group_id" \
+          --role "Key Vault Secrets Officer" --scope "$(echo $key_vault | jq -r '.id')" --only-show-errors)
+        kv_role_assignment_check="$(echo $kv_role_assignment | jq -r '.roleDefinitionName')"
+        if [[ $(echo $kv_role_assignment | jq -r '.roleDefinitionName') == 'Key Vault Secrets Officer' ]]; then
+          echo -e "${GREEN}--- Role 'Key Vault Secrets Officer' assigned to Key Vault '$keyvaultName'...${NC}"
+          # Add Service Principal secret to Keyvault.
+          secret_add=$(az keyvault secret set --name "$(echo "$sp" | jq -r '.displayName')" --vault-name "$keyvaultName" --value "$(echo "$sp" | jq -r '.password')")
+        else
+          echo -e "${RED}ERROR: Failed to assign 'Key Vault Secrets Officer' role to Key Vault '$keyvaultName'. Please investigate or create manually. Skip.${NC}"
+        fi
+      fi
+    else
+      echo -e "${GREEN}--- Key Vault '$keyvaultName' already exists. Skip.${NC}"
+      # Create role assignment.
+      kv_role_assignment=$(az role assignment create --assignee-object-id "$entra_group_id" \
+        --role "Key Vault Secrets Officer" --scope "$(echo $key_vault_check | jq -r '.id')" --only-show-errors)
+      kv_role_assignment_check="$(echo $kv_role_assignment | jq -r '.roleDefinitionName')"
+      if [[ $(echo $kv_role_assignment | jq -r '.roleDefinitionName') == 'Key Vault Secrets Officer' ]]; then
+        echo -e "${GREEN}--- Role 'Key Vault Secrets Officer' assigned to Key Vault '$keyvaultName'...${NC}"
+        # Add Service Principal secret to Keyvault.
+        secret_add=$(az keyvault secret set --name "$(echo "$sp" | jq -r '.displayName')" --vault-name "$keyvaultName" --value "$(echo "$sp" | jq -r '.password')")
+      else
+        echo -e "${RED}ERROR: Failed to assign 'Key Vault Secrets Officer' role to Key Vault '$keyvaultName'. Please investigate or create manually. Skip.${NC}"
       fi
     fi
   fi
@@ -187,19 +229,19 @@ echo -e "${GREEN}                         Azure Bootstrap Script"
 echo -e "${YELLOW}#======================================================================#"
 
 # Main: Run functions.
-echo -e "${GREEN} - Setting up script configuration...${NC}"
+echo -e "${GREEN}- Setting up script configuration...${NC}"
 convert_tags
-echo -e "${GREEN} - Obtaining tenant details...${NC}"
+echo -e "${GREEN}- Obtaining tenant details...${NC}"
 get_tenant_root_mg
-echo -e "${GREEN} - Renaming default subscription...${NC}"
+echo -e "${GREEN}- Renaming default subscription...${NC}"
 rename_default_sub
-echo -e "${GREEN} - Creating Entra ID group...${NC}"
+echo -e "${GREEN}- Creating Entra ID group...${NC}"
 create_entra_group
-echo -e "${GREEN} - Configuring Service Principal...${NC}"
+echo -e "${GREEN}- Configuring Service Principal...${NC}"
 create_service_principal
-echo -e "${GREEN} - Deploying resources for Terraform backend...${NC}"
+echo -e "${GREEN}- Deploying resources for Terraform backend...${NC}"
 deploy_terraform_backend
-echo -e "${GREEN} *** COMPLETE! ***${NC}"
+echo -e "${GREEN} *** COMPLETE! *** ${NC}"
 
 # Results/Output.
 echo
@@ -219,6 +261,3 @@ echo -e "${YELLOW}[Terraform] Container:${NC} $(echo $container | jq -r '.name')
 echo
 echo -e "${YELLOW}#======================================================================#"
 # clear && ./scripts/bootstrap/bootstrap-azure.sh
-
-# TO DO:
-# KeyVault for SP secret.
