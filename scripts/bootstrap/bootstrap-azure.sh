@@ -105,8 +105,8 @@ rename_default_sub(){
 
 # Function: Create Entra ID group for RBAC 'Contributor' at ternant root.
 create_entra_group(){
-  entra_group=$(az ad group create --display-name "$entraGroupName" --mail-nickname "$entraGroupName" \
-    --description "$entraGroupDesc" --only-show-errors)
+  entra_group=$(az ad group create --display-name "$entraGroupName" --mail-nickname "$entraGroupName" --description "$entraGroupDesc" --only-show-errors)
+  sleep 5 # Sleep to avoid delay issues.
   if [[ -z "$entra_group" ]]; then
     echo -e "${RED}FATAL: Failed to configure Entra group '$entraGroupName'. Abort. ${NC}"
     exit 1
@@ -117,13 +117,6 @@ create_entra_group(){
     if [[ -z "$group_role_assignment" ]]; then
       echo -e "${RED}FATAL: Failed to assign required role for Entra group '$entraGroupName'. Please investigate or assign manually. ${NC}"
       exit 1
-    fi
-    # Assign current logged in user as member.
-    currentUserAdd=$(az ad group member add --group "$entraGroupName" --member-id "$(az ad signed-in-user show --query id --output tsv)")
-    currentUserCheck=$(az ad group member check --group "$entraGroupName" --member-id "$(az ad signed-in-user show --query id --output tsv)")
-    if [[ "$currentUserCheck" == "false" ]]; then
-        echo -e "${RED}ERROR: Failed to add current user to group '$entraGroupName'. Please investigate or assign manually. Skip.${NC}"
-        exit 1
     fi
   fi
 }
@@ -137,18 +130,7 @@ create_service_principal(){
   else
     sp_oid=$(az ad sp show --id $(echo "$sp" | jq -r '.appId') --query "id" -o tsv)
     # Assign Service Principal to Entra group using objectID.
-    memberCheck=$(az ad group member check --group "$entraGroupName" --member-id $sp_oid)
-    is_member=$(echo "$memberCheck" | jq -r '.value')
-    if [[ "$is_member" == "false" ]]; then
-      memberAdd=$(az ad group member add --group "$entraGroupName" --member-id $sp_oid)
-      # Re-Check group membership after add.
-      memberCheck2=$(az ad group member check --group "$entraGroupName" --member-id $sp_oid)
-      is_member2=$(echo "$memberCheck2" | jq -r '.value')
-      if [[ "$is_member2" == "false" ]]; then
-        echo -e "${RED}FATAL: Failed to add Service Principal to group '$entraGroupName'. Please investigate or assign manually. ${NC}"
-        exit 1
-      fi
-    fi
+    memberCheck=$(az ad group member check --group "$entraGroupName" --member-id $sp_oid --only-show-errors)
   fi
 }
 
@@ -180,42 +162,6 @@ deploy_terraform_backend(){
           echo -e "${GREEN}--- Storage Container ($(echo $container | jq -r '.name')) already exists...${NC}."
           container=$containerName
         fi
-      fi
-    fi
-
-    # Proceed with KeyVault.
-    key_vault_check=$(az keyvault show --name "$keyvaultName")
-    if [[ -z "$key_vault_check" ]]; then
-      # Create Keyvault.
-      key_vault=$(az keyvault create --name "$keyvaultName" --resource-group "$resourceGroupName" --location $location --tags $tag_string)
-      if [[ -z "$key_vault" ]]; then
-        echo -e "${RED}ERROR: Failed to create Key Vault '$keyvaultName'. Please investigate or create manually. Skip.${NC}"
-      else
-        echo -e "${GREEN}--- Created Key Vault ($(echo $key_vault | jq -r '.name'))...${NC}"
-        # Create role assignment.
-        kv_role_assignment=$(az role assignment create --assignee-object-id "$entra_group_id" \
-          --role "Key Vault Secrets Officer" --scope "$(echo $key_vault | jq -r '.id')" --only-show-errors)
-        kv_role_assignment_check="$(echo $kv_role_assignment | jq -r '.roleDefinitionName')"
-        if [[ $(echo $kv_role_assignment | jq -r '.roleDefinitionName') == 'Key Vault Secrets Officer' ]]; then
-          echo -e "${GREEN}--- Role 'Key Vault Secrets Officer' assigned to Key Vault '$keyvaultName'...${NC}"
-          # Add Service Principal secret to Keyvault.
-          secret_add=$(az keyvault secret set --name "$(echo "$sp" | jq -r '.displayName')" --vault-name "$keyvaultName" --value "$(echo "$sp" | jq -r '.password')")
-        else
-          echo -e "${RED}ERROR: Failed to assign 'Key Vault Secrets Officer' role to Key Vault '$keyvaultName'. Please investigate or create manually. Skip.${NC}"
-        fi
-      fi
-    else
-      echo -e "${GREEN}--- Key Vault '$keyvaultName' already exists. Skip.${NC}"
-      # Create role assignment.
-      kv_role_assignment=$(az role assignment create --assignee-object-id "$entra_group_id" \
-        --role "Key Vault Secrets Officer" --scope "$(echo $key_vault_check | jq -r '.id')" --only-show-errors)
-      kv_role_assignment_check="$(echo $kv_role_assignment | jq -r '.roleDefinitionName')"
-      if [[ $(echo $kv_role_assignment | jq -r '.roleDefinitionName') == 'Key Vault Secrets Officer' ]]; then
-        echo -e "${GREEN}--- Role 'Key Vault Secrets Officer' assigned to Key Vault '$keyvaultName'...${NC}"
-        # Add Service Principal secret to Keyvault.
-        secret_add=$(az keyvault secret set --name "$(echo "$sp" | jq -r '.displayName')" --vault-name "$keyvaultName" --value "$(echo "$sp" | jq -r '.password')")
-      else
-        echo -e "${RED}ERROR: Failed to assign 'Key Vault Secrets Officer' role to Key Vault '$keyvaultName'. Please investigate or create manually. Skip.${NC}"
       fi
     fi
   fi
