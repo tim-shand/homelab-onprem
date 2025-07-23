@@ -7,7 +7,7 @@
 # Azure Tenant Bootstrap Script for Terraform Backend.
 # Creates a new Entra ID Group with Contributor assignment at tenant root.
 # Creates a Service Principal for CI/CD and Terraform integration, add to above group.
-# Configuresa Terraform remote backend in Azure using Storage Account and Blob Container.
+# Configures a Terraform remote backend in Azure using Storage Account and Blob Container.
 
 # NOTE: 
 # Requires administrator privileges to run.
