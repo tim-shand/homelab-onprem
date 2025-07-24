@@ -11,6 +11,10 @@ variable "tfbackend_container" {
     type = string
     description = "Terraform backend Resource Group name."
 }
+variable "tfbackend_key" {
+    type = string
+    description = "Terraform backend Key name."
+}
 
 # Azure: Platform Variables
 variable "tenant_id" {
