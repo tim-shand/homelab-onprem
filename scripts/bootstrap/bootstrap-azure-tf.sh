@@ -29,6 +29,7 @@ NC='\033[0m' # No Color / Reset
 # Define list of required applications to be installed.
 requiredApps="jq git terraform gh curl"
 tf_minversion="1.5.0" # Minimum Terraform version.
+tf_file_output_dir="../../azure/platform"
 
 # Organization and Project Variables
 location="australiaeast"
@@ -227,7 +228,7 @@ deploy_terraform_backend
 echo -e "${GREEN}- COMPLETE!${NC}"
 
 # Populate Terraform files.
-cat > providers.tf <<TFPROVIDERS
+cat > $(echo $tf_file_output_dir)/providers.tf <<TFPROVIDERS
 terraform {
     required_version = ">= $tf_minversion"
     required_providers {
@@ -272,7 +273,7 @@ provider "azurerm" {
 TFPROVIDERS
 
 # Terraform Variables file.
-cat > variables.tf <<TFVARIABLES
+cat > $(echo $tf_file_output_dir)/variables.tf <<TFVARIABLES
 # Terraform Variables
 variable "tf_backend_resourcegroup" {
     type = string
@@ -349,7 +350,7 @@ variable "tagOwner" {
 TFVARIABLES
 
 # Terraform TFVARS file.
-cat > providers.tf <<TFVARS
+cat > $(echo $tf_file_output_dir)/providers.tf <<TFVARS
 # Terraform Variables
 tf_backend_resourcegroup = $(echo $resource_group | jq -r '.name')
 tf_backend_storageaccount = $(echo $storage_account | jq -r '.name')
