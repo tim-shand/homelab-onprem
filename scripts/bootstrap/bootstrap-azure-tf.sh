@@ -29,7 +29,7 @@ NC='\033[0m' # No Color / Reset
 # Define list of required applications to be installed.
 requiredApps="jq git terraform gh curl"
 tf_minversion="1.5.0" # Minimum Terraform version.
-tf_file_output_dir="../../azure/platform"
+tf_file_output_dir="./environments/azure/platform" # Directory for created Terraform files.
 
 # Organization and Project Variables
 location="australiaeast"
@@ -45,7 +45,7 @@ tag_owner="CloudOps"
 # Azure: Service Principal and Entra Groups
 rootMGName="Tenant Root Group" # Default Management Group name for the root management group.
 servicePrincipalName="$orgPrefix-$project-$service-sp" # Service Principal name
-entraGroupName="Sec-RBAC-Global-Contributors"
+entraGroupName="Sec-RBAC-Global-Contributors-IAC"
 entraGroupDesc="Security group for privileged identities to assign contributor (RBAC) role at tenant level."
 
 # Azure: Resource Group, Storage Account, and Blob Container
@@ -63,7 +63,7 @@ tag_string="project=$project creator=$tag_creator service=$service environment=$
 #------------------------------------------------#
 
 # Function: Install required apps/packages on local machine.
-installRequiredApps() {
+install_required_apps() {
     for app in $requiredApps; do
         if ! command -v $app &> /dev/null; then
             echo -e "${YELLOW}WARN: $app is not installed. Installing..."
@@ -118,6 +118,7 @@ create_service_principal(){
         echo -e "${RED}ERROR: Failed to configure Service Principal required. Unable to proceed. Abort ${NC}"
         exit 1
     fi
+    sp_id=$(az ad sp show --id "$(echo "$sp" | jq -r '.appId')" --query "id" -o tsv)
 }
 
 # Function: Create Entra ID group for RBAC assignment of role 'Contributor' at tenant root. 
@@ -125,37 +126,43 @@ configure_entra_group(){
     # Create Entra group and assign role.
     entra_group=$(az ad group create --display-name "$entraGroupName" --mail-nickname "$entraGroupName" \
         --description "$entraGroupDesc" --only-show-errors)
-    sleep 5 # Sleep to avoid delay issues.
     if [[ -z "$entra_group" ]]; then
         echo -e "${RED}ERROR: Failed to configure Entra group (required) '$entraGroupName'. Abort.${NC}"
         exit 1
     fi
+    sleep 10 # Sleep to avoid delay replication issues.
+    # Add Service Principal as group member.
+    sp_group_member=$(az ad group member add --group "$(echo $entra_group | jq -r '.id')" --member-id "$sp_id" --only-show-errors)
+    sleep 5 # Sleep to avoid delay replication issues.
+    sp_group_check=$(az ad group member check --group "$(echo $entra_group | jq -r '.id')" --member-id "$sp_id" --only-show-errors)
+    if [[ -z $sp_group_check ]]; then
+        echo -e "${RED}ERROR: Failed to add Service Principal '($(echo "$sp_id"))' to Entra group (required) '$entraGroupName'. Abort.${NC}"
+        exit 1
+    elif [[ "$(echo $sp_group_check | jq -r '.value')" == 'false' ]]; then
+        echo -e "${RED}ERROR: Failed to add Service Principal '($(echo "$sp_id"))' to Entra group (required) '$entraGroupName'. Abort.${NC}"
+        exit 1
+    fi
     # Assign Contributor role to group at tenant root scope.
-    group_role_assignment=$(az role assignment create --assignee-object-id $(echo "$entra_group" | jq -r '.id') \
-        --role Contributor --scope "$root_mg_id" --only-show-errors)
+    sleep 10 # Sleep to avoid delay replication issues.
+    group_role_assignment=$(az role assignment create --assignee-object-id "$(echo "$entra_group" | jq -r '.id')" \
+        --role Contributor --scope "$root_mg_id" --assignee-principal-type "Group" --only-show-errors)
     if [[ -z "$group_role_assignment" ]]; then
         echo -e "${RED}ERROR: Failed to assign role 'Contributor' (required) for Entra group '$entraGroupName'. Abort.${NC}"
         exit 1
-    fi
-    # Add Service Principal as group member.
-    sp_id=$(az ad sp show --id "$(echo "$sp" | jq -r '.appId')" --query "id" -o tsv)
-    sp_group_member=$(az ad group member add --group "$(echo $entra_group | jq -r '.id')" --member-id "$sp_id" --only-show-errors)
-    if [[ -z $sp_group_member ]]
-        echo -e "${RED}ERROR: Failed to add Service Principal to Entra group (required) '$entraGroupName'. Abort.${NC}"
     fi
 }
 
 # Function: Deploy resources for Terraform backend.
 deploy_terraform_backend(){
     # Create Resource Group.
-    resource_group=$(az group create --name "$resourceGroupName" --location $location --tags $tag_string)
+    resource_group=$(az group create --name "$resourceGroupName" --location "$location" --tags "$tag_string")
     if [[ -z "$resource_group" ]]; then
         echo -e "${RED}ERROR: Failed to create Resource Group (required) '$resourceGroupName'. Abort.${NC}"
         exit 1
     fi
     # Create Storage Account.
     storage_account=$(az storage account create --name "$storageAccountName" --resource-group "$resourceGroupName" \
-        --access-tier Hot --tags $tag_string --sku Standard_LRS --only-show-errors)
+        --access-tier Hot --tags "$tag_string" --sku Standard_LRS --only-show-errors)
     if [[ -z "$storage_account" ]]; then
         echo -e "${RED}ERROR: Failed to create Storage Account (required) '$storageAccountName'. Abort.${NC}"
         exit 1
@@ -171,12 +178,162 @@ deploy_terraform_backend(){
             echo -e "${RED}ERROR: Failed to check for Storage Container (required) '$containerName'. Abort.${NC}"
             exit 1
         else
-            if [[ $(echo $container_exists | jq -r '.exists' == 'false') ]]; then
+            if [[ "$(echo $container_exists | jq -r '.exists')" == 'false' ]]; then
                 echo -e "${RED}ERROR: Failed to create Storage Container (required) '$containerName'. Abort.${NC}"
                 exit 1
             fi
         fi
     fi
+}
+
+populate_tf_files(){
+# Populate Terraform files.
+cat > "$(echo $tf_file_output_dir)/providers.tf" <<TFPROVIDERS
+terraform {
+    required_version = ">= $tf_minversion"
+    required_providers {
+        azurerm = {
+            source  = "hashicorp/azurerm"
+            version = "~> 4.37"
+        }
+        azapi = {
+            source  = "Azure/azapi"
+            version = "~> 2.5.0"
+        }
+        random = {
+            source  = "hashicorp/random"
+            version = "~> 3.5"
+        }
+        time = {
+            source  = "hashicorp/time"
+            version = "~> 0.9"
+        }
+    }
+    backend "azurerm" {
+        resource_group_name   = var.tf_backend_resourcegroup
+        storage_account_name  = var.tf_backend_storageaccount
+        container_name        = var.tf_backend_container
+        key                   = var.tf_backend_key
+    }
+}
+
+provider "azapi" {
+    tenant_id         = var.tf_tenant_id
+    subscription_id   = var.tf_subscription_id
+    client_id         = var.tf_client_id
+    client_secret     = var.tf_client_secret
+}
+
+provider "azurerm" {
+    tenant_id         = var.tf_tenant_id
+    subscription_id   = var.tf_subscription_id
+    client_id         = var.tf_client_id
+    client_secret     = var.tf_client_secret
+}
+TFPROVIDERS
+
+# Terraform Variables file.
+cat > "$(echo $tf_file_output_dir)/variables.tf" <<TFVARIABLES
+# Terraform Variables
+variable "tf_backend_resourcegroup" {
+    type = string
+    description = "Terraform backend Resource Group name."
+}
+variable "tf_backend_storageaccount" {
+    type = string
+    description = "Terraform backend Storage Account name."
+}
+variable "tf_backend_container" {
+    type = string
+    description = "Terraform backend Resource Group name."
+}
+variable "tf_backend_key" {
+    type = string
+    description = "Terraform backend Key name."
+}
+
+# Azure: Platform Variables
+variable "tf_tenant_id" {
+    type = string
+    description = "Azure Tenant."
+}
+variable "tf_subscription_id" {
+    type = string
+    description = "Azure Subscription."
+}
+variable "tf_client_id" {
+    type = string
+    description = "Azure Service Principal (AppId)."
+}
+variable "tf_client_secret" {
+    type = string
+    description = "Azure Service Principal Client Secret."
+}
+variable "default_location" {
+    type = string
+    description = "Default Azure location for resources."
+}
+
+# Naming Conventions (using validations)
+variable "org_prefix" {
+    type = string
+    description = "Core naming prefix for majority of resources."
+    validation {
+        condition     = length(var.org_prefix) == 3 # Must be exactly 3 characters
+        error_message = "The org_pefix must be exactly 3 characters long."
+    }
+}
+variable "org_service" {
+    type = string
+    description = "Service code for naming convention."
+}
+variable "org_project" {
+    type = string
+    description = "Project code for naming convention."
+}
+variable "org_environment" {
+    type = string
+    description = "Environment code for naming convention (prd, dev, tst)."
+    validation {
+        condition = contains(["prd","dev","tst" ], var.org_environment)
+        error_message = "Valid value is one of the following: prd, dev, tst."
+    }
+}
+variable "tag_creator" {
+    type = string
+    description = "Name of account creating resources."
+}
+variable "tag_owner" {
+    type = string
+    description = "Name of account creating resources."
+}
+TFVARIABLES
+
+# Terraform TFVARS file.
+cat > "$(echo $tf_file_output_dir)/terraform.tfvars" <<TFVARS
+# Terraform Variables
+tf_backend_resourcegroup = "$(echo $resource_group | jq -r '.name')"
+tf_backend_storageaccount = "$(echo $storage_account | jq -r '.name')"
+tf_backend_container = "$(echo $containerName)"
+tf_backend_key = "$(echo $containerKeyName)"
+
+# Azure: Platform Variables
+tf_tenant_id = "$(echo "$sp" | jq -r '.tenant')"
+tf_subscription_id = "$default_sub_id"
+tf_client_id = "$(echo "$sp" | jq -r '.appId')"
+tf_client_secret = "$(echo "$sp" | jq -r '.password')"
+
+# Naming Conventions (using validations)
+default_location = "$location_full"
+org_prefix = "$orgPrefix" # Short code name for the organization
+org_project = "$project" # platform, landingzone
+org_service = "$service" # Terraform, Application, Ansible
+org_environment = "$environment"
+
+# Tag Values
+tag_creator = "$tag_creator" # Creator of resources
+tag_owner = "$tag_owner" # Owner of the resources
+TFVARS
 }
 
 #------------------------------------------------#
@@ -224,156 +381,12 @@ configure_entra_group
 # Deploy resources used for remote Terraform backend.
 echo -e "${GREEN}- Deploying resources for Terraform backend...${NC}"
 deploy_terraform_backend
+# Create Terrform files using bootstrap variables.
+echo -e "${GREEN}- Populating Terraform files...${NC}"
+populate_tf_files
+
 # Complete.
 echo -e "${GREEN}- COMPLETE!${NC}"
-
-# Populate Terraform files.
-cat > $(echo $tf_file_output_dir)/providers.tf <<TFPROVIDERS
-terraform {
-    required_version = ">= $tf_minversion"
-    required_providers {
-        azurerm = {
-            source  = "hashicorp/azurerm"
-            version = "~> 4.37"
-        }
-        azapi = {
-            source  = "Azure/azapi"
-            version = "~> 2.5.0"
-        }
-        random = {
-            source  = "hashicorp/random"
-            version = "~> 3.5"
-        }
-        time = {
-            source  = "hashicorp/time"
-            version = "~> 0.9"
-        }
-    }
-    backend "azurerm" {
-        resource_group_name   = var.tfbackend_resourcegroup
-        storage_account_name  = var.tfbackend_storageaccount
-        container_name        = var.tfbackend_container
-        key                   = var.tfbackend_key
-    }
-}
-
-provider "azapi" {
-    tenant_id         = var.tenant_id
-    subscription_id   = var.subscription_id
-    client_id         = var.client_id
-    client_secret     = var.client_secret
-}
-
-provider "azurerm" {
-    tenant_id         = var.tenant_id
-    subscription_id   = var.subscription_id
-    client_id         = var.client_id
-    client_secret     = var.client_secret
-}
-TFPROVIDERS
-
-# Terraform Variables file.
-cat > $(echo $tf_file_output_dir)/variables.tf <<TFVARIABLES
-# Terraform Variables
-variable "tf_backend_resourcegroup" {
-    type = string
-    description = "Terraform backend Resource Group name."
-}
-variable "tf_backend_storageaccount" {
-    type = string
-    description = "Terraform backend Storage Account name."
-}
-variable "tf_backend_container" {
-    type = string
-    description = "Terraform backend Resource Group name."
-}
-variable "tf_backend_key" {
-    type = string
-    description = "Terraform backend Key name."
-}
-
-# Azure: Platform Variables
-variable "tf_tenant_id" {
-    type = string
-    description = "Azure Tenant."
-}
-variable "tf_subscription_id" {
-    type = string
-    description = "Azure Subscription."
-}
-variable "tf_client_id" {
-    type = string
-    description = "Azure Service Principal (AppId)."
-}
-variable "tf_client_secret" {
-    type = string
-    description = "Azure Service Principal Client Secret."
-}
-variable "location" {
-    type = string
-    description = "Default Azure location for resources."
-}
-
-# Naming Conventions (using validations)
-variable "orgPrefix" {
-    type = string
-    description = "Core naming prefix for majority of resources."
-    validation {
-        condition     = length(var.orgPrefix) == 3 # Must be exactly 3 characters
-        error_message = "The orgPrefix must be exactly 3 characters long."
-    }
-}
-variable "orgService" {
-    type = string
-    description = "Service code for naming convention."
-}
-variable "orgProject" {
-    type = string
-    description = "Project code for naming convention."
-}
-variable "orgEnvironment" {
-    type = string
-    description = "Environment code for naming convention (prd, dev, tst)."
-    validation {
-        condition = contains(["prd","dev","tst" ], var.orgEnvironment)
-        error_message = "Valid value is one of the following: prd, dev, tst."
-    }
-}
-variable "tagCreator" {
-    type = string
-    description = "Name of account creating resources."
-}
-variable "tagOwner" {
-    type = string
-    description = "Name of account creating resources."
-}
-TFVARIABLES
-
-# Terraform TFVARS file.
-cat > $(echo $tf_file_output_dir)/providers.tf <<TFVARS
-# Terraform Variables
-tf_backend_resourcegroup = $(echo $resource_group | jq -r '.name')
-tf_backend_storageaccount = $(echo $storage_account | jq -r '.name')
-tf_backend_container = $(echo $containerName)
-tf_backend_key = $(echo $containerKeyName)
-
-# Azure: Platform Variables
-tf_tenant_id = $(echo "$sp" | jq -r '.tenant')"
-tf_subscription_id = $default_sub_id
-tf_client_id = $(echo "$sp" | jq -r '.appId')
-tf_client_secret = $(echo "$sp" | jq -r '.password')"
-
-# Naming Conventions (using validations)
-location = $location_full
-orgPrefix = $orgPrefix # Short code name for the organization
-orgProject = $project # platform, landingzone
-orgService = $service # Terraform, Application, Ansible
-orgEnvironment = $environment
-
-# Tag Values
-tagCreator = "$tag_creator" # Creator of resources
-tagOwner = "$tag_owner" # Owner of the resources
-TFVARS
 
 # Results/Output.
 echo
@@ -391,6 +404,5 @@ echo -e "${YELLOW}[Terraform] Resource Group:${NC} $(echo $resource_group | jq -
 echo -e "${YELLOW}[Terraform] Storage Account:${NC} $(echo $storage_account | jq -r '.name')"
 echo -e "${YELLOW}[Terraform] Container:${NC} $(echo $containerName)"
 echo
-
 echo -e "${YELLOW}#======================================================================#"
-# ./scripts/bootstrap/bootstrap-azure-tf.sh
+# clear && sudo ./scripts/bootstrap/bootstrap-azure-tf.sh

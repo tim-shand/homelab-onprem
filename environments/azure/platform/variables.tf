@@ -1,77 +1,73 @@
 # Terraform Variables
-variable "tfbackend_resourcegroup" {
+variable "tf_backend_resourcegroup" {
     type = string
     description = "Terraform backend Resource Group name."
 }
-variable "tfbackend_storageaccount" {
+variable "tf_backend_storageaccount" {
     type = string
     description = "Terraform backend Storage Account name."
 }
-variable "tfbackend_container" {
+variable "tf_backend_container" {
     type = string
     description = "Terraform backend Resource Group name."
 }
-variable "tfbackend_key" {
+variable "tf_backend_key" {
     type = string
     description = "Terraform backend Key name."
 }
 
 # Azure: Platform Variables
-variable "tenant_id" {
+variable "tf_tenant_id" {
     type = string
     description = "Azure Tenant."
 }
-variable "subscription_id" {
+variable "tf_subscription_id" {
     type = string
     description = "Azure Subscription."
 }
-variable "client_id" {
+variable "tf_client_id" {
     type = string
     description = "Azure Service Principal (AppId)."
 }
-variable "client_secret" {
+variable "tf_client_secret" {
     type = string
     description = "Azure Service Principal Client Secret."
 }
-variable "location_preferred" {
+variable "default_location" {
     type = string
-    description = "Preferred Azure location for resources."
+    description = "Default Azure location for resources."
 }
-#variable "tags" {
-#  description = "A map of tags to apply to all resources."
-#  type        = map(string)
-#}
 
 # Naming Conventions (using validations)
-variable "orgPrefix" {
+variable "org_prefix" {
     type = string
     description = "Core naming prefix for majority of resources."
     validation {
-        condition     = length(var.orgPrefix) == 3 # Must be exactly 3 characters
-        error_message = "The orgPrefix must be exactly 3 characters long."
+        condition     = length(var.org_prefix) == 3 # Must be exactly 3 characters
+        error_message = "The org_pefix must be exactly 3 characters long."
     }
 }
-variable "orgPlatform" {
+variable "org_service" {
     type = string
-    description = "Platform code for naming convention."
+    description = "Service code for naming convention."
 }
-variable "orgProject" {
+variable "org_project" {
     type = string
     description = "Project code for naming convention."
 }
-variable "orgEnvironment" {
+variable "org_environment" {
     type = string
     description = "Environment code for naming convention (prd, dev, tst)."
     validation {
-        condition = contains(["prd","dev","tst" ], var.orgEnvironment)
+        condition = contains(["prd","dev","tst" ], var.org_environment)
         error_message = "Valid value is one of the following: prd, dev, tst."
     }
 }
-variable "tagCreator" {
+variable "tag_creator" {
     type = string
     description = "Name of account creating resources."
 }
-variable "tagOwner" {
+variable "tag_owner" {
     type = string
     description = "Name of account creating resources."
 }
