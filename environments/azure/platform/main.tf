@@ -1,5 +1,5 @@
 # Azure
-# Path: environments/azure/platform/main.tf
+# Path: ./environments/azure/platform/main.tf
 
 locals {
   timestamp = replace(replace(replace(replace(timestamp(), "-", ""), "T", ""), ":", ""), "Z", "")

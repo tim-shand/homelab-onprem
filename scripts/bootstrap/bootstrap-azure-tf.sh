@@ -189,6 +189,7 @@ deploy_terraform_backend(){
 populate_tf_files(){
 # Populate Terraform files.
 cat > "$(echo $tf_file_output_dir)/providers.tf" <<TFPROVIDERS
+# Populated by Bootstrap Script.
 terraform {
     required_version = ">= $tf_minversion"
     required_providers {
@@ -234,7 +235,7 @@ TFPROVIDERS
 
 # Terraform Variables file.
 cat > "$(echo $tf_file_output_dir)/variables.tf" <<TFVARIABLES
-# Terraform Variables
+# Populated by Bootstrap Script.
 variable "tf_backend_resourcegroup" {
     type = string
     description = "Terraform backend Resource Group name."
@@ -311,7 +312,7 @@ TFVARIABLES
 
 # Terraform TFVARS file.
 cat > "$(echo $tf_file_output_dir)/terraform.tfvars" <<TFVARS
-# Terraform Variables
+# Populated by Bootstrap Script.
 tf_backend_resourcegroup = "$(echo $resource_group | jq -r '.name')"
 tf_backend_storageaccount = "$(echo $storage_account | jq -r '.name')"
 tf_backend_container = "$(echo $containerName)"
