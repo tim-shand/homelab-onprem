@@ -48,10 +48,10 @@ My intention is to utilize automation and DevOps methodologies to ensure a clean
 
 ## :memo: To Do
 
-- [ ] Migrate 'prep' directory using PS/AzureCLI/Bash for bootstrap and utility scripts. 
+- [x] Migrate 'prep' directory using PS/AzureCLI/Bash for bootstrap and utility scripts. 
+- [ ] Configure Azure landing zone.
 - [ ] Review and update Terraform modules, code and structure.
 - [ ] Proxmox: Add additional hypervisors for clustering benefits (HA/failover).
-- [ ] Configure Azure landing zone.
 - [ ] Configure Monitoring and Observability.
 - [ ] Investigate implementing a SIEM for logging security events.
 - [ ] Investigate Kubernetes for container orchestration.
