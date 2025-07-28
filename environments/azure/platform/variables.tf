@@ -1,22 +1,5 @@
 # Populated by Bootstrap Script.
 
-variable "tf_backend_resourcegroup" {
-    type = string
-    description = "Terraform backend Resource Group name."
-}
-variable "tf_backend_storageaccount" {
-    type = string
-    description = "Terraform backend Storage Account name."
-}
-variable "tf_backend_container" {
-    type = string
-    description = "Terraform backend Resource Group name."
-}
-variable "tf_backend_key" {
-    type = string
-    description = "Terraform backend Key name."
-}
-
 # Azure: Platform Variables
 variable "tf_tenant_id" {
     type = string
