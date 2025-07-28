@@ -1,8 +1,4 @@
 # Terraform Variables
-tf_backend_resourcegroup = "abc-platform-terraform-prd-rg"
-tf_backend_storageaccount = "abcplatformtfprd123456"
-tf_backend_container = "abc-platform-terraform-tfstate"
-tf_backend_key = "abc-platform-terraform.tfstate"
 
 # Azure: Platform Variables
 tf_tenant_id = "123456-ABCD-7890-EFGH-1234ABCD"

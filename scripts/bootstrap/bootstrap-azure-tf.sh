@@ -210,12 +210,7 @@ terraform {
             version = "~> 0.9"
         }
     }
-    backend "azurerm" {
-        resource_group_name   = var.tf_backend_resourcegroup
-        storage_account_name  = var.tf_backend_storageaccount
-        container_name        = var.tf_backend_container
-        key                   = var.tf_backend_key
-    }
+    backend "azurerm" {}
 }
 
 provider "azapi" {
@@ -313,10 +308,6 @@ TFVARIABLES
 # Terraform TFVARS file.
 cat > "$(echo $tf_file_output_dir)/terraform.tfvars" <<TFVARS
 # Populated by Bootstrap Script.
-tf_backend_resourcegroup = "$(echo $resource_group | jq -r '.name')"
-tf_backend_storageaccount = "$(echo $storage_account | jq -r '.name')"
-tf_backend_container = "$(echo $containerName)"
-tf_backend_key = "$(echo $containerKeyName)"
 
 # Azure: Platform Variables
 tf_tenant_id = "$(echo "$sp" | jq -r '.tenant')"
@@ -334,6 +325,14 @@ org_environment = "$environment"
 # Tag Values
 tag_creator = "$tag_creator" # Creator of resources
 tag_owner = "$tag_owner" # Owner of the resources
+TFVARS
+
+# Terraform Backend Configuration file.
+cat > "$(echo $tf_file_output_dir)/backend.conf" <<TFVARS
+resource_group_name   = "$(echo $resource_group | jq -r '.name')"
+storage_account_name  = "$(echo $storage_account | jq -r '.name')"
+container_name        = "$(echo $containerName)"
+key                   = "$(echo $containerKeyName)"
 TFVARS
 }
 
