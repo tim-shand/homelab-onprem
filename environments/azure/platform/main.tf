@@ -5,16 +5,26 @@ locals {
   timestamp = replace(replace(replace(replace(timestamp(), "-", ""), "T", ""), ":", ""), "Z", "")
 }
 
-resource "azurerm_resource_group" "rg-test-01" {
-  name = "${var.org_prefix}-TestRun-rg"
-  #name      = "${var.org_prefix}-${var.org_project}-${var.org_service}-${var.org_environment}-rg"
-  location = var.default_location
-  tags = {
-    Service     = "TestRun" #var.org_service
-    Project     = var.org_project
-    Environment = "tst" #var.org_environment
-    Owner       = var.tag_owner
-    Creator     = var.tag_creator
-    Created     = local.timestamp
-  }
+# Management Groups:
+## Management Group: Top Level (under tenant root).
+resource "azurerm_management_group" "mg_top" {
+  display_name = "tshand-com"
+}
+
+## Management Group: Platform
+resource "azurerm_management_group" "mg_platform" {
+  display_name               = "platform"
+  parent_management_group_id = azurerm_management_group.mg_top.id
+  subscription_ids = [
+    var.tf_subscription_id, # Add current platform subscription.
+  ]
+}
+
+## Management Group: Workload
+resource "azurerm_management_group" "mg_workloads" {
+  display_name               = "workloads"
+  parent_management_group_id = azurerm_management_group.mg_top.id
+  subscription_ids = [
+    var.tf_subscription_workload_id, # Add workload subscription.
+  ]
 }

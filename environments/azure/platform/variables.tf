@@ -9,6 +9,10 @@ variable "tf_subscription_id" {
   type        = string
   description = "Azure Subscription."
 }
+variable "tf_subscription_workload_id" {
+  type        = string
+  description = "Azure Workloads Subscription ID."
+}
 variable "tf_client_id" {
   type        = string
   description = "Azure Service Principal (AppId)."
