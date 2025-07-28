@@ -41,6 +41,7 @@ service_short="tf" # tf, kube, ans, sec
 environment="prd" # prd, dev, tst
 tag_creator="Bootstrap"
 tag_owner="CloudOps"
+tag_created=$(date +"%Y%m%d%H%M")
 
 # Azure: Service Principal and Entra Groups
 rootMGName="Tenant Root Group" # Default Management Group name for the root management group.
@@ -56,7 +57,7 @@ containerName="$orgPrefix-$project-$service-tfstate" # Blob Container name
 containerKeyName="$orgPrefix-$project-$service.tfstate" # Container Key name
 
 # Tag String Compilation used for resources.
-tag_string="project=$project creator=$tag_creator service=$service environment=$environment created="$(date +"%Y%m%d%H%M%S")" owner=$tag_owner"
+tag_string="project=$project creator=$tag_creator service=$service environment=$environment created=$tag_created owner=$tag_owner"
 
 #------------------------------------------------#
 # FUNCTIONS
@@ -155,14 +156,14 @@ configure_entra_group(){
 # Function: Deploy resources for Terraform backend.
 deploy_terraform_backend(){
     # Create Resource Group.
-    resource_group=$(az group create --name "$resourceGroupName" --location "$location" --tags "$tag_string")
+    resource_group=$(az group create --name "$resourceGroupName" --location "$location" --tags $tag_string)
     if [[ -z "$resource_group" ]]; then
         echo -e "${RED}ERROR: Failed to create Resource Group (required) '$resourceGroupName'. Abort.${NC}"
         exit 1
     fi
     # Create Storage Account.
     storage_account=$(az storage account create --name "$storageAccountName" --resource-group "$resourceGroupName" \
-        --access-tier Hot --tags "$tag_string" --sku Standard_LRS --only-show-errors)
+        --access-tier Hot --tags $tag_string --sku Standard_LRS --only-show-errors)
     if [[ -z "$storage_account" ]]; then
         echo -e "${RED}ERROR: Failed to create Storage Account (required) '$storageAccountName'. Abort.${NC}"
         exit 1
@@ -225,12 +226,14 @@ provider "azurerm" {
     subscription_id   = var.tf_subscription_id
     client_id         = var.tf_client_id
     client_secret     = var.tf_client_secret
+    features {}
 }
 TFPROVIDERS
 
 # Terraform Variables file.
 cat > "$(echo $tf_file_output_dir)/variables.tf" <<TFVARIABLES
 # Populated by Bootstrap Script.
+
 variable "tf_backend_resourcegroup" {
     type = string
     description = "Terraform backend Resource Group name."
@@ -370,10 +373,10 @@ az extension add --upgrade -n account
 echo -e "${GREEN}- Obtaining tenant details...${NC}"
 get_tenant_root_mg
 # Rename default subscription.
-echo -e "${GREEN}- Renaming default subscription...${NC}"
+echo -e "${GREEN}- Configuring default subscription...${NC}"
 rename_default_sub
 # Create Service Principal.
-echo -e "${GREEN}- Creating Service Principal for Terraform...${NC}"
+echo -e "${GREEN}- Configuring Service Principal for Terraform...${NC}"
 create_service_principal
 # Configure Entra group and role assignment.
 echo -e "${GREEN}- Configuring Entra group and assigning roles...${NC}"

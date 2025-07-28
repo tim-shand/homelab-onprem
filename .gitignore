@@ -1,5 +1,6 @@
 # Ignore
 .notes/
+.notes.md
 .token
 .config
 *.log

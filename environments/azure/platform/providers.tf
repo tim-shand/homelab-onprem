@@ -34,4 +34,5 @@ provider "azurerm" {
     subscription_id   = var.tf_subscription_id
     client_id         = var.tf_client_id
     client_secret     = var.tf_client_secret
+    features {}
 }
