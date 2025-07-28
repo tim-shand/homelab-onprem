@@ -18,12 +18,7 @@ terraform {
             version = "~> 0.9"
         }
     }
-    backend "azurerm" {
-        resource_group_name   = var.tf_backend_resourcegroup
-        storage_account_name  = var.tf_backend_storageaccount
-        container_name        = var.tf_backend_container
-        key                   = var.tf_backend_key
-    }
+    backend "azurerm" {}
 }
 
 provider "azapi" {
