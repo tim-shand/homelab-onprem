@@ -25,7 +25,6 @@ My intention is to utilize automation and DevOps methodologies to ensure a clean
 
 - **Azure**
   - Platform Landing Zone _(TO BE DEPLOYED)_.
-  - Identity platform (Entra ID) for Service Principals used in automation workflows.
 - **Cloudflare**
   - Several DNS zones are configured in Cloudflare, and used for various projects.
 - **Github**
