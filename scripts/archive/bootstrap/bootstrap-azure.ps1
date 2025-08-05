@@ -132,22 +132,102 @@ function Rename-DefaultSubscription {
         $renameSub = (Rename-AzSubscription -Id $defaultSub.Id -SubscriptionName "$newSubName" -ErrorAction SilentlyContinue)
         if ($renameSub) {
             Write-Log -Level "INF" -Stage $stage -Message "Default subscription renamed to '$newSubName'."
-            $global:totalResults += @{
-                SubscriptionName = "$newSubName"
-                SubscriptionId = $renameSub.SubscriptionId
-            }
         } else {
             Write-Log -Level "ERR" -Stage $stage -Message "Failed to rename default subscription. Skip."
         }
     } else {
         Write-Log -Level "WRN" -Stage $stage -Message "Default subscription not found. Skip."
     }
-    return $renameSub.SubscriptionId
+    $subscription = @{
+        Name = $newSubName
+        Id = $renameSub
+    }
+    return $subscription
+}
+
+# Function: Create New/Update Existing Service Principal.
+function Add-ServicePrincipal {
+    $stage = "Configure-ServicePrincipal"
+    # Check if existing Service Principal exists.
+    $sp = Get-AzADServicePrincipal -DisplayName $servicePrincipalName -ErrorAction SilentlyContinue
+    if(!($sp)){
+        # Create new Service Principal if no existing one found.
+        $sp = New-AzADServicePrincipal -DisplayName $servicePrincipalName -ErrorAction Stop
+        if($sp){
+            Write-Log -Level "INF" -Stage $stage -Message "Service Principal '$($sp.DisplayName)' created successfully."
+        } else{
+            Write-Log -Level "ERR" -Stage $stage -Message "Failed to create Service Principal. Abort."
+            #exit 1
+        }
+    } else{
+        Write-Log -Level "INF" -Stage $stage -Message "Service Principal '$($sp.DisplayName)' already exists. Updating credential."
+        $newSpCred = (New-AzADAppCredential -ApplicationId $sp.AppId -EndDate (Get-Date).AddYears(1) -ErrorAction Stop)
+    }
+    # Append to global results.
+    $servicePrincipal = @{
+        Name = $sp.DisplayName
+        Id = $sp.Id
+        AppId = $sp.AppId
+        Secret = if($newSpCred){$newSpCred.SecretText}else{$sp.PasswordCredentials[0].SecretText}
+    }
+    return $servicePrincipal
+}
+
+# Function: Create Entra ID Group for tenant contributor assignment.
+function Add-EntraContributorGroup {
+    $stage = "Configure-EntraID"
+    $group = Get-AzAdGroup -DisplayName $entraGroupName -First 1
+    if(!($group)){
+        # Create if not exists.
+        $group = New-AzAdGroup -DisplayName $entraGroupName -Description $entraGroupDesc -MailNickname $entraGroupName
+        Start-Sleep -Seconds 10 # Pause to allow replication.
+        if(!($group)){
+            Write-Log -Level "ERR" -Stage $stage -Message "Failed to create Entra ID group. Abort."
+            #exit 1
+        } else{
+            Write-Log -Level "INF" -Stage $stage -Message "Configured Entra ID group '$($group.DisplayName)'."
+        }
+    } else{
+        Write-Log -Level "INF" -Stage $stage -Message "Entra ID group '$($group.DisplayName)' already exists. Skip."
+    }
+    # Add Service Principal as member of contributor group.
+    if(Get-AzADGroupMember -GroupObjectId $group.Id -Filter "id eq '$($servicePrincipal.Id)'"){
+        Write-Log -Level "INF" -Stage $stage -Message "Service Principal is already a member of Entra ID group '$($group.DisplayName)'. Skip."
+    } else {
+        Start-Sleep -Seconds 10 # Pause to allow replication.
+        $memberAdd = Add-AzADGroupMember -TargetGroupObjectId $group.Id -MemberObjectId $servicePrincipal.Id -ErrorAction SilentlyContinue
+        if($memberAdd){
+            Write-Log -Level "INF" -Stage $stage -Message "Added Service Principal to Entra ID group '$($group.DisplayName)'."
+        } else{
+            Write-Log -Level "ERR" -Stage $stage -Message "Failed to add Service Principal to Entra ID group. Abort."
+            #exit 1
+        }
+    }
+    # Assign Entra ID group Contributor role at Tenant Root Management group.
+    if(!($rootMG)){
+        Write-Log -Level "ERR" -Stage $stage -Message "Failed to get Tenant Root Group. Abort."
+        #exit 1
+    } else{        
+        $roleAssignment = Get-AzRoleAssignment -Scope "$($rootMG.Id)" -ObjectId $entraGroup.Id -ErrorAction SilentlyContinue
+        if(!($roleAssignment)){
+            $roleAssignment = New-AzRoleAssignment -ObjectId "$($group.Id)" -RoleDefinitionName Contributor -Scope "$($rootMG.Id)"
+            if($roleAssignment){
+                Write-Log -Level "INF" -Stage $stage -Message "Added 'Contributor' role to Entra ID group for '$($rootMG.DisplayName)'."
+            } else{
+                Write-Log -Level "ERR" -Stage $stage -Message "Failed to add 'Contributor' role to Entra ID group. Abort."
+                #exit 1
+            }
+        } else{
+            Write-Log -Level "INF" -Stage $stage -Message "Role assignment 'Contributor' already assigned for Entra ID group at '$($rootMG.DisplayName)'. Skip."
+        }
+    }
+    return $group
 }
 
 # Function: Created Azure resources for Terraform backend.
-function Create-TerraformResources {
-    $stage = "Deploy-TerraformResources"
+function Add-Resources {
+    $stage = "Deploy-Resources"
+    $resourceObj = @()
 
     # Resource Group: Check if the resource group already exists, create if not present.
     $rg = New-AzResourceGroup -Name $tfResourceGroupName -Location $primaryLocation -Tags $tags -ErrorAction Stop -Force
@@ -156,6 +236,9 @@ function Create-TerraformResources {
     } else{
         Write-Log -Level "INF" -Stage $stage -Message "Created Resource Group '$($rg.ResourceGroupName)'."
         
+        # Register storage provider for subscription.
+        Register-AzResourceProvider -ProviderNamespace "Microsoft.Storage" -ErrorAction SilentlyContinue
+
         # Storage Account: Check if the storage account already exists, create if not present.
         $storageAccount = New-AzStorageAccount -Name $tfStorageAccountName -ResourceGroupName "$($rg.ResourceGroupName)" -Location $primaryLocation -SkuName "Standard_LRS" -Tags $tags -ErrorAction Stop
         if(!($storageAccount)){
@@ -171,49 +254,19 @@ function Create-TerraformResources {
             } else{
                 Write-Log -Level "INF" -Stage $stage -Message "Created Storage Container '$($tfContainerName)'."
             }
+
+            $resourceObj = [pscustomobject] @{
+                ResourceGroup = $rg.ResourceGroupName
+                LocationPrimary = $rg.Location
+                StorageAccount = $storageAccount.StorageAccountName
+                StorageKind = $storageAccount.Kind
+                StorageSKU = $storageAccount.Sku.Name
+                Container = $saContainer.BlobContainerClient.Name
+            }
+            return $resourceObj
         }
     }
 }
-
-# Function: Create Entra ID Group for tenant contributor assignment.
-function Create-EntraContributorGroup {
-    $stage = "Configure-EntraID"
-    $group = New-AzAdGroup -DisplayName $entraGroupName -Description $entraGroupDesc -MailNickname $entraGroupName
-    if(!($group)){
-        Write-Log -Level "ERR" -Stage $stage -Message "Failed to create Entra ID group. Abort."
-        #exit 1
-    } else{
-        Write-Log -Level "INF" -Stage $stage -Message "Configured Entra ID group '$($group.DisplayName)'."
-    }
-    return $group
-}
-
-# Function: Create New/Update Existing Service Principal.
-function Create-ServicePrincipal {
-    $stage = "Configure-ServicePrincipal"
-    # Check if existing Service Principal exists.
-    $sp = Get-AzADServicePrincipal -DisplayName $servicePrincipalName -ErrorAction SilentlyContinue
-    if(!($sp)){
-        # Create new Service Principal if no existing one found.
-        $sp = New-AzADServicePrincipal -DisplayName $servicePrincipalName -ErrorAction Stop
-        if($sp){
-            Write-Log -Level "INF" -Stage $stage -Message "Service Principal '$($sp.DisplayName)' created successfully."
-        } else{
-            Write-Log -Level "ERR" -Stage $stage -Message "Failed to create Service Principal. Abort."
-            #exit 1
-        }
-    } else{
-        $newSpCred = (New-AzADAppCredential -ApplicationId $sp.AppId -EndDate (Get-Date).AddYears(1) -ErrorAction Stop)
-    }
-    # Append to global results.
-    $servicePrincipal = @{
-        ServicePrincipalName = $sp.DisplayName
-        ServicePrincipalAppId = $sp.AppId
-        ServicePrincipalSecret = if($newSpCred){$newSpCred.SecretText}else{$sp.PasswordCredentials[0].SecretText}
-    }
-    return $servicePrincipal
-}
-
 
 #====================================================#
 # VARIABLES
@@ -233,7 +286,7 @@ $requiredApps += [pscustomobject] @{Name = "Azure CLI"; Cmd = "az"; WinGetName =
 $requiredPSModules = @("Az","Microsoft.Entra","Az.Subscription")
 
 # Naming Conventions
-$orgName = "Tim-Shand"
+#$orgName = "Tim-Shand"
 $orgPrefix = "tjs" # Short code name for the organization.
 $primaryLocation = "australiaeast"
 $ownerTeam = "CloudOps-Team" # DevOps-Team, CloudOps-Team
@@ -270,7 +323,11 @@ if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
     Write-Log -Level "ERR" -Stage "Script" -Message "WARNING: You must run this script as Administrator."
     #exit 1
 }
-Write-Host "`r`n=============== Bootstrap Script: Azure Bootstrap Script ===============`r`n"
+# Get Tenant Root Management Group.
+$rootMG = Get-AzManagementGroup | Where-Object {$_.Id -like "*$((Get-AzTenant).Id)"}
+
+Write-Host
+Write-Host -ForegroundColor Magenta "`r`n=============== Bootstrap Script: Azure Bootstrap Script ===============`r`n"
 Write-Host "This script will create Azure resources necessary for Terraform bootstrapping.`r`n"
 Write-Log -Level "INF" -Stage "START" -Message "Azure Bootstrap script started."
 
@@ -287,16 +344,32 @@ if($requiredAppCheck -ge $requiredApps.Count){
         if($azureAuthCheck){
 
             # Rename default subscripion for use as platform landing zone.
-            $renameSub = Rename-DefaultSubscription
-
-            # Create Entra ID group for tenant contributor role.
-            $entraGroup = Create-EntraContributorGroup
+            $subscription = Rename-DefaultSubscription
 
             # Create Service Principal for Terraform/CI deployments.
-            $servicePrincipal = Create-ServicePrincipal
+            $servicePrincipal = Add-ServicePrincipal
 
+            # Create Entra ID group for tenant contributor role.
+            $entraGroup = Add-EntraContributorGroup            
+            
             # Deploy Resources.
-            #Create-TerraformResources
+            $resources = Add-Resources
+
+            # Output Results
+            Write-Host
+            Write-Host -ForegroundColor Green  "|--- SERVICE PRINCIPAL ---------------------------------------------------|"
+            Write-Host -ForegroundColor Yellow "[Entra ID] Contributor Group: $($entraGroup.DisplayName)"
+            Write-Host -ForegroundColor Yellow "[Service Principal] Name: $($servicePrincipal.Name)"
+            Write-Host -ForegroundColor Yellow "[Service Principal] Tenant: $($rootMG.TenantId)"
+            Write-Host -ForegroundColor Yellow "[Service Principal] AppId: $($servicePrincipal.AppId)"
+            Write-Host -ForegroundColor Yellow "[Service Principal] Secret: $($servicePrincipal.Secret)"
+            Write-Host
+            Write-Host -ForegroundColor Green  "|--- RESOURCES -----------------------------------------------------------|"
+            Write-Host -ForegroundColor Yellow "[Platform Subscription] ID: $($subscription.Id.SubscriptionId)"
+            Write-Host -ForegroundColor Yellow "[Platform Subscription] Name: $($subscription.Name)"
+            Write-Host -ForegroundColor Yellow "[Terraform] Resource Group: $($resources.ResourceGroup)"
+            Write-Host -ForegroundColor Yellow "[Terraform] Storage Account: $($resources.StorageAccount)"
+            Write-Host -ForegroundColor Yellow "[Terraform] State Container: $($resources.Container)"
 
         } else{
             Write-Log -Level "ERR" -Stage $stage -Message "Failed Azure connection check. Abort."
@@ -313,6 +386,6 @@ if($requiredAppCheck -ge $requiredApps.Count){
 
 # End
 Write-Log -Level "INF" -Stage "END" -Message "Azure Bootstrap script completed."
-Write-Host "`r`n=============== Bootstrap Script: Complete ===============`r`n"
+Write-Host -ForegroundColor Magenta "`r`n=============== Bootstrap Script: Complete ===============`r`n"
 
 # EOF
