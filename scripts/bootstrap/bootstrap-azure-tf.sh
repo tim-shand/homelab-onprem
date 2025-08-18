@@ -94,21 +94,21 @@ install_required_apps() {
     fi
 }
 
+# Function: Get tenant root management group ID for role assignment.
+get_tenant_root_mg(){
+    root_mg_id=$(az account management-group list --query "[?displayName=='Tenant Root Group'].id" -o tsv)
+    if [[ -z "$root_mg_id" ]]; then
+        echo -e "${RED}ERROR: Tenant Root Group not found (required). Unable to proceed. Abort.${NC}"
+        exit 1
+    fi
+}
+
 # Function: Rename default subscription for use as Platform landing zone.
 rename_default_sub(){
     default_sub_id=$(az account list --query "[?isDefault].id" -o tsv)
     rename_sub=$(az account subscription rename --id "$default_sub_id" --name "$subNameNew" --only-show-errors)
     if [[ -z $rename_sub ]]; then
         echo -e "${RED}ERROR: Failed to rename default subscription. Skip.${NC}"
-    fi
-}
-
-# Function: Get tenant root management group ID for role assignment.
-get_tenant_root_mg(){
-    root_mg_id=$(az account management-group list --query "[?displayName=='$rootMGName'].id" -o tsv)
-    if [[ -z "$root_mg_id" ]]; then
-        echo -e "${RED}ERROR: Tenant Root Group not found (required). Unable to proceed. Abort.${NC}"
-        exit 1
     fi
 }
 
