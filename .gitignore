@@ -9,6 +9,8 @@
 
 # Environments
 .env
+*.env
+*.env.ps1
 .venv
 env/
 venv/

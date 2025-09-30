@@ -1,35 +1,37 @@
 # Personal Home Lab
 
 Welcome to my personal home lab! :wave:
-
-This home lab serves to provide an environment for self-hosting and experimenting with different technologies. 
-As my knowledge expands, I aim to include new and existing operational, design and security best practices where possible. 
-My intention is to utilize automation and DevOps methodologies to ensure a clean, reproducable and well-managed environment. 
+This serves to provide an environment for self-hosting and experimenting with different technologies. 
+A base for hands-on learning, developing knowledge and improving skills in DevOps and Cloud platforms.
 
 ## :office: Physical Hardware
 
-- **Hypervisors**
-  - 1x HP EliteDesk G1 (Intel i5-4590T, 16 GB DDR3, 250 GB SSD).
-  - Running [Proxmox VE](https://www.proxmox.com/en/products/proxmox-virtual-environment/overview) in single node configuration (for now).
-  - **UPDATE:** In process of obtaining Lenovo Think Center P330 or M720Q for additional **dual-NIC capability**. This will provide physically separated host & guest networks for better workload isolation (dedicated bandwidth for host-level operations) and improved security (reduced attack surface).
-- **Networking**
-  - **Switch:** TP-Link TL-SG108PE 8-Port Gigabit Easy Smart PoE Switch.
-  - Connecting hosts physically, providing outbound access to Internet routed out through home network.
+### Hypervisors
+- 2x Lenovo Think Station P330 (Intel i5 9600T, 16GB DDR4, 250GB OS, 1TB ZFS).
+  - Running clustered [Proxmox VE](https://www.proxmox.com/en/products/proxmox-virtual-environment/overview) for VMs and some containers.
+  - Raspberry Pi for maintaining Quorum [details on setup found here](https://www.tshand.com/p/home-lab-part-6-setup-qdevice-for-proxmox-quorum/).
+  
+### Networking
+- **Switch:** TP-Link TL-SG108PE 8-Port Gigabit Easy Smart PoE Switch.
+  - Connecting nodes physically, providing outbound access to Internet via firewall connected to home WiFi network.
+- **Firewall:** HP EliteDesk G1 (Intel i5-4590T, 16 GB DDR3, 250 GB SSD).
+  - Running OPNsense, providing firewall, VLAN and routing capabilities.
 
 ## :computer: Virtualized Infrastructure
 
 - **Firewall/Router:** Virtualized [pfSense](https://www.pfsense.org/download/) VM (for internal lab use).
 - **Virtual Machines:** Management servers, test and misc VMs.
 
-## :cloud: Cloud/SaaS Resources
+## :cloud: Cloud Services
 
 - **Azure**
-  - Platform Landing Zone _(TO BE DEPLOYED)_.
+  - Platform Landing Zone and web app services.
+  - GitHub Repo: [Homelab-Azure](https://github.com/tim-shand/homelab-azure)
 - **Cloudflare**
-  - Several DNS zones are configured in Cloudflare, and used for various projects.
+  - Several DNS zones are configured in Cloudflare, and used for various personal projects.
 - **Github**
   - Housing the project and providing code repository.
-  - Github Actions for automation pipelines _(considering migration to Azure DevOps)_.
+  - Github Actions for automation pipelines.
 
 ## :hammer_and_wrench: Deployment Tool Set
 
@@ -49,7 +51,7 @@ My intention is to utilize automation and DevOps methodologies to ensure a clean
 ## :memo: To Do
 
 - [x] Migrate 'prep' directory using PS/AzureCLI/Bash for bootstrap and utility scripts. 
-- [ ] Configure Azure landing zone.
+- [x] Configure Azure landing zone.
 - [ ] Review and update Terraform modules, code and structure.
 - [ ] Proxmox: Add additional hypervisors for clustering benefits (HA/failover).
 - [ ] Configure Monitoring and Observability.
