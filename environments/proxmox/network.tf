@@ -4,7 +4,7 @@
 
 # Networking: PVE Nodes -------------------------------------------------------#
 # Import: terraform -chdir=environments/proxmox import -var-file=env/prod.tfvars \
-# proxmox_virtual_environment_network_linux_bridge.pve01_vmbr0 inf-hvr-pve01:vmbr0 
+# proxmox_virtual_environment_network_linux_bridge.pve01_vmbr0 pve01:vmbr0 
 resource "proxmox_virtual_environment_network_linux_bridge" "pve01_vmbr0" {
   node_name     = var.pve_host_config_01["name"]
   name          = "vmbr0"
