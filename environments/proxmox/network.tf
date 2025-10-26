@@ -15,6 +15,7 @@ resource "proxmox_virtual_environment_network_linux_bridge" "pve01_vmbr1" {
   ]
 }
 
+# Create matching networking on second PVE node.
 resource "proxmox_virtual_environment_network_linux_bridge" "pve02_vmbr1" {
   node_name     = var.pve_host_config_02["name"]
   name          = "vmbr1"
