@@ -15,7 +15,7 @@ A base for hands-on learning, developing knowledge and improving skills in DevOp
 - **Switch:** TP-Link TL-SG108PE 8-Port Gigabit Easy Smart PoE Switch.
   - Connecting nodes physically, providing outbound access to Internet via firewall connected to home WiFi network.
 - **Firewall:** HP EliteDesk G1 (Intel i5-4590T, 16 GB DDR3, 250 GB SSD).
-  - Running OPNsense, providing firewall, VLAN and routing functionality.
+  - Running [OPNsense](https://opnsense.org/) providing firewall, VLAN and routing functionality.
 
 ## :computer: Virtualized Infrastructure
 

@@ -33,11 +33,11 @@ crash.*.log
 backend.conf
 
 # Exclude prod .tfvars files, which are likely to contain sensitive data, such as password, private keys, and other secrets.
-#*.tfvars
+*.tfvars
 terraform.tfvars
 *.tfvars.json
-prod.tfvars
-
+# Allow example TFVARS file.
+!example.tfvars
 
 # Ignore override files as they are usually used to override resources locally.
 override.tf
