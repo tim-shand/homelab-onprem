@@ -10,15 +10,19 @@ pve_auth_ssh_keyfile  = "~/.ssh/id_ed25519"
 pve_host_config_01 = {
   name    = "pve-host-01"
   url     = "https://10.0.0.1:8006/api2/json"
+  pve_nic = "eno1" # On-board NIC.
   usb_nic = "enx001"
-  vm_net  = "vmbr1" # vmbr0 reserved for PVE hosts.
+  pve_net = "vmbr0" # vmbr0 reserved for PVE hosts.
+  vm_net  = "vmbr1" # vmbr1 used for VM VLANs.
 }
 
 pve_host_config_02 = {
   name    = "pve-host-02"
   url     = "https://10.0.0.2:8006/api2/json"
-  usb_nic = "enx002"
-  vm_net  = "vmbr1" # vmbr0 reserved for PVE hosts.
+  pve_nic = "eno1" # On-board NIC.
+  usb_nic = "enx001"
+  pve_net = "vmbr0" # vmbr0 reserved for PVE hosts.
+  vm_net  = "vmbr1" # vmbr1 used for VM VLANs.
 }
 
 pve_sys_node_domain_dns = {
