@@ -48,6 +48,14 @@ A base for hands-on learning, developing knowledge and improving skills in DevOp
   - **Bash/Powershell**
     - Bootstrapping and utility scripts.
 
+## :notebook: Usage Notes
+
+### Terraform
+
+```bash
+terraform -chdir=environments/proxmox plan -var-file=env/prod.tfvars
+```
+
 ## :memo: To Do
 
 - [x] Migrate 'prep' directory using PS/AzureCLI/Bash for bootstrap and utility scripts. 
