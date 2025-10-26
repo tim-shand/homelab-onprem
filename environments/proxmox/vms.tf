@@ -5,12 +5,13 @@
 #----- VM: Management Server -----#
 # Import: `terraform import proxmox_virtual_environment_cluster_options.options cluster` 
 resource "proxmox_virtual_environment_vm" "vm_svr-mgt-utl01" {
+  count       = 0 # 1=Create, 0=Destroy
   name        = "svr-mgt-utl01"
   description = "Management: Utility Server 01"
   node_name   = var.pve_host_config_01["name"] # Proxmox Node
   clone {
     vm_id     = "901" # Ubuntu 24.04 Cloud-Init image.
-    full      = true # Full clone, not linked.
+    full      = true # Create a full clone, instead of linked clone.
   }
   pool_id     = "Management"
   tags        = ["mgt", "ubuntu"] # List of tags to apply to the VM.
@@ -29,11 +30,9 @@ resource "proxmox_virtual_environment_vm" "vm_svr-mgt-utl01" {
     dedicated = 2048 # 2GB RAM.
   }
   disk {
-    datastore_id = "pve-zfs-pool" # Use shared ZFS pool.
-    #file_id      = "local:iso/noble-server-cloudimg-amd64.img"
-    #import_from  = "local:iso/noble-server-cloudimg-amd64.img"
-    interface    = "virtio0"
-    iothread     = true
+    datastore_id = "pve-zfs-pool" # Use ZFS pool for storage.
+    interface    = "scsi0"
+    #iothread     = true # Only valid for VirtIO disks.
     discard      = "on"
     size         = 32
   }
@@ -42,6 +41,7 @@ resource "proxmox_virtual_environment_vm" "vm_svr-mgt-utl01" {
     vlan_id   = var.vm_config_svr-mgt-utl01["vlan_id"]
   }
   initialization {
+    datastore_id  = "pve-zfs-pool" # Use ZFS pool for Cloud-Init disk storage.
     ip_config {
       ipv4 {
         address   = var.vm_config_svr-mgt-utl01["ipv4"]
