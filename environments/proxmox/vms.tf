@@ -3,6 +3,7 @@
 #=============================================================#
 
 #----- VM: Management Server -----#
+# Import: `terraform import proxmox_virtual_environment_cluster_options.options cluster` 
 resource "proxmox_virtual_environment_vm" "vm_svr-mgt-utl01" {
   name        = "svr-mgt-utl01"
   description = "Management: Utility Server 01"
@@ -12,7 +13,7 @@ resource "proxmox_virtual_environment_vm" "vm_svr-mgt-utl01" {
     full      = true # Full clone, not linked.
   }
   pool_id     = "Management"
-  tags        = ["MGT", "Ubuntu"] # List of tags to apply to the VM.
+  tags        = ["mgt", "ubuntu"] # List of tags to apply to the VM.
   on_boot     = true
   agent {
     enabled   = true
@@ -37,7 +38,7 @@ resource "proxmox_virtual_environment_vm" "vm_svr-mgt-utl01" {
     size         = 32
   }
   network_device {
-    bridge    = var.vm_config_svr-mgt-utl01["network"] #proxmox_virtual_environment_network_linux_bridge.pve01_vmbr1.id # VLAN aware Linux bridge.
+    bridge    = var.vm_config_svr-mgt-utl01["network"] # VLAN aware Linux bridge.
     vlan_id   = var.vm_config_svr-mgt-utl01["vlan_id"]
   }
   initialization {

@@ -15,6 +15,7 @@ resource "proxmox_virtual_environment_cluster_options" "cluster_options" {
     lower = 200
     upper = 9999
   }
+  console                   = "html5" # Set default viewer.
 }
 
 # Node Domain & DNS ------------------------------------------------------------#
