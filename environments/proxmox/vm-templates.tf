@@ -3,9 +3,7 @@
 #======================================================#
 
 ### NOTES ###
-# - Currently requires SSH from runner to PVE host.
-# - Not in use until supported via APUI token. 
-# - Using script file on PVE host instead. 
+# - Currently requires SSH from runner to PVE host for creating custom disks (templates).
 
 #----- VM Template: Ubuntu 24.04 (Cloud-Init) -----#
 
