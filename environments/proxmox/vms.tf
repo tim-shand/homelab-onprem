@@ -4,7 +4,7 @@
 
 module "vm_svr_management" {
   source            = "./modules/vm-ubuntu-general"
-  instances         = 2 # 0=Destroy. ${count.index}
+  instances         = 1 # 0=Destroy. ${count.index}
   pve_node_config   = var.pve_host_config_01
   vm_details        = {
     name        = "svr-mgt-utl"
@@ -24,4 +24,3 @@ module "vm_svr_management" {
   }
   cloudinit_config = var.cloudinit_config
 }
-
