@@ -39,6 +39,7 @@ resource "proxmox_virtual_environment_vm" "vm_template_ubuntu24" {
     type = "l26" # l26=(Linux Kernel 2.6 - 5.X), win11=(Windows 11/2022-2025). 
   }
   tpm_state {
+    datastore_id = "${local.template_disk_storage}"
     version = "v2.0" # Use TPM 2.0 (required for Windows 11+).
   }
   cpu {

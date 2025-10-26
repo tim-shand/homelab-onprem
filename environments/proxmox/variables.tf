@@ -41,9 +41,3 @@ variable "cloudinit_config" {
   description   = "Map of default cloud-init settings to use with VMs."
   type          = map(string)
 }
-
-#----- VM: Specific VM Configurations-----#
-variable "vm_config_svr-mgt-utl01" {
-  description = "Map of configuration items for server 'svr-mgt-utl01'."
-  type        = map(string)
-}
