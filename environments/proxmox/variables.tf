@@ -9,6 +9,18 @@ variable "pve_auth_api_token" {
   sensitive     = true # Secret value, keep hidden from outputs.
 }
 
+variable "pve_auth_ssh_un" {
+  description   = "SSH account username, used for non-supported API actions."
+  type          = string
+  sensitive     = true # Secret value, keep hidden from outputs.
+}
+
+variable "pve_auth_ssh_keyfile" {
+  description   = "SSH key file path, used for non-supported API actions."
+  type          = string
+  sensitive     = true # Secret value, keep hidden from outputs.
+}
+
 variable "pve_sys_node_domain_dns" {
   description   = "Map of domain and DNS configuration for the Proxmox cluster nodes."
   type          = map(string)
