@@ -54,14 +54,5 @@ A base for hands-on learning, developing knowledge and improving skills in DevOp
 
 ```bash
 terraform -chdir=environments/proxmox plan -var-file=env/prod.tfvars
+terraform -chdir=environments/proxmox apply -var-file=env/prod.tfvars
 ```
-
-## :memo: To Do
-
-- [x] Migrate 'prep' directory using PS/AzureCLI/Bash for bootstrap and utility scripts. 
-- [x] Configure Azure landing zone.
-- [ ] Redeploy on-prem infra using Terraform and CI/CD.
-- [ ] Configure Monitoring and Observability (RMM as well).
-- [ ] Implement a ticketing system (auto-logging alerts from monitoring platform).
-- [ ] Investigate a SIEM for logging security events.
-- [ ] Investigate Kubernetes for advanced container orchestration.
