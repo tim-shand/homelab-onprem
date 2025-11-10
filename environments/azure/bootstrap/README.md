@@ -120,27 +120,31 @@ terraform -chdir=environments/azure/bootstrap destroy -var-file=bootstrap.tfvars
 ### Migration
 
 1. Edit Terraform `providers.tf` file.
-2. Comment out the existing `backend "local"` block.
-3. Uncomment, and populate, the `backend "azurerm"` block.
+2. Comment out the existing `backend "local"` block and uncomment the `backend "azurerm"` block.
 
 ```hcl
-# Update Terraform `providers.tf` file.
-  #backend "local" {
-  #  path = "azure-mgt-iac-backends.tfstate" # Used for initial bootstrapping process.
-  #}
-  backend "azurerm" { # Use dynamic backend supplied in GHA workflow, AFTER bootstrap process.
-    resource_group_name  = "resource_group_name" # Replace with created Resource Group.
-    storage_account_name = "storage_account_name" # Replace with created Storage Account.
-    container_name       = "container_name" # Replace with created Container.
-    key                  = "azure-mgt-iac-backends.tfstate"
-  }
+  # backend "local" {
+  #   path = "azure-mgt-iac-bootstrap.tfstate" # Used for initial bootstrapping process.
+  # }
+  backend "azurerm" {} # Use dynamic backend supplied via inline command.
 ```
 
-4. Migrate the local Terraform state to newly created Azure resources.
+3. Migrate the local Terraform state to newly created Azure resources.
 
 ```shell
+# Set shell variables to Terraform outputs.
+ARM_BACKEND_RG="[RESOURCE_GROUP_NAME]" \
+ARM_BACKEND_SA="[STORAGE_ACCOUNT_NAME]" \
+ARM_BACKEND_CN="[STORAGE_ACCOUNT_CONTAINER_NAME]" \
+ARM_BACKEND_KEY="azure-mgt-iac-bootstrap.tfstate"
+echo -e "RG: $ARM_BACKEND_RG \nSA: $ARM_BACKEND_SA \nCN: $ARM_BACKEND_CN \nKEY: $ARM_BACKEND_KEY"
+
 # Migrate local state to Azure backend.
-terraform -chdir=environments/azure/bootstrap init -migrate-state -force-copy -input=false
+terraform -chdir=environments/azure/bootstrap init -migrate-state -force-copy -input=false \
+-backend-config="resource_group_name=$ARM_BACKEND_RG" \
+-backend-config="storage_account_name=$ARM_BACKEND_SA" \
+-backend-config="container_name=$ARM_BACKEND_CN" \
+-backend-config="key=$ARM_BACKEND_KEY"
 ```
 
 5. Clean up local files (no longer required post-migration).

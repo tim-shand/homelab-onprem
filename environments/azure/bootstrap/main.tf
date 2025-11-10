@@ -92,7 +92,7 @@ resource "azurerm_storage_account" "iac_sa" {
 
 # Storage Container.
 resource "azurerm_storage_container" "iac_cn" {
-  name                  = "tfstate-azure-mgt-iac-backends"
+  name                  = "tfstate-azure-mgt-iac-core"
   storage_account_id    = azurerm_storage_account.iac_sa.id
   container_access_type = "private"
 }

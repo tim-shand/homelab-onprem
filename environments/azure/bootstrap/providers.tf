@@ -18,15 +18,10 @@ terraform {
           version = "~> 6.6.0"
       }
   }
-  backend "local" {
-    path = "azure-mgt-iac-backends.tfstate" # Used for initial bootstrapping process.
-  }
-  # backend "azurerm" { # Use dynamic backend supplied in GHA workflow, AFTER bootstrap process.
-  #   resource_group_name  = "tjs-mgt-iac-rg" # Replace with created Resource Group.
-  #   storage_account_name = "" # Replace with created Storage Account.
-  #   container_name       = "tfstate-azure-mgt-iac-backends" # Replace with created Container.
-  #   key                  = "azure-mgt-iac-backends.tfstate"
+  # backend "local" {
+  #   path = "azure-mgt-iac-bootstrap.tfstate" # Used for initial bootstrapping process.
   # }
+  backend "azurerm" {} # Use dynamic backend supplied via inline command.
 }
 provider "azurerm" {
   features {}

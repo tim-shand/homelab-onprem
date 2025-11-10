@@ -19,7 +19,7 @@ tags = {
     Project = "Platform" # Name of the project the resources are for.
     Environment = "prd" # dev, tst, prd
     Owner = "CloudOps" # Team responsible for the resources.
-    Creator = "Bootstrap" # Person or process that created the resources.
+    Creator = "Bootstrapper" # Person or process that created the resources.
 }
 
 # Github Settings.
