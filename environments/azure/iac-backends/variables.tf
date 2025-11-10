@@ -21,3 +21,9 @@ variable "iac_sa_name" {
   description = "Target Azure subscription for IaC backend deployments."
   type        = string
 }
+
+variable "gha_token" {
+  description = "Github Actions token for modifying environment secrets."
+  type        = string
+  sensitive   = true
+}

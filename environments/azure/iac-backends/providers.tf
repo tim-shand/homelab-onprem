@@ -5,6 +5,10 @@ terraform {
           source  = "hashicorp/azurerm"
           version = "~> 4.40.0"
       }
+      github = {
+        source = "integrations/github"
+        version = "~>6.7.5"
+    }
   }
   backend "azurerm" {} # Use dynamic backend supplied in GHA workflow, AFTER bootstrap process.
 }
@@ -12,4 +16,7 @@ provider "azurerm" {
   features {}
   tenant_id       = var.tenant_id
   subscription_id = var.subscription_id_iac # Uses dedicated IaC subscription.
+}
+provider "github" {
+  token = var.gha_token
 }
