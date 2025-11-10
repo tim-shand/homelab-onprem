@@ -12,6 +12,12 @@ variable "subscription_id_iac" {
   type        = string
 }
 
+variable "sp_client_id" {
+  description = "Service Principal client ID."
+  type        = string
+  sensitive   = true
+}
+
 variable "iac_sa_rg" {
   description = "Target Azure subscription for IaC backend deployments."
   type        = string
