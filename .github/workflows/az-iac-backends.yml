@@ -41,7 +41,7 @@ jobs:
       ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }} # Use GitHub Secrets for sensitive data.
       ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }} # Service Principal Client ID
       ARM_USE_OIDC: ${{ secrets.ARM_USE_OIDC }} # Use OIDC for authentication
-      ARM_SUBSCRIPTION_IAC: ${{ secrets.ARM_SUBSCRIPTION_IAC }} # Azure Subscription for Iac backends.
+      ARM_SUBSCRIPTION_ID_IAC: ${{ secrets.ARM_SUBSCRIPTION_ID_IAC }} # Azure Subscription for Iac backends.
       # Terraform Backend:
       TF_BACKEND_RG_NAME: ${{ vars.ARM_IAC_BACKEND_RG }} # IaC Core: Resource Group
       TF_BACKEND_SA_NAME: ${{ vars.ARM_IAC_BACKEND_SA }} # IaC Core: Storage Account
