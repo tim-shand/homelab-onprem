@@ -22,6 +22,7 @@ terraform {
       version = "~> 6.0"
     }
   }
+  backend "azurerm" {} # Use dynamic backend supplied in GHA workflow.
 }
 # Provider configurations.
 provider "azurerm" {

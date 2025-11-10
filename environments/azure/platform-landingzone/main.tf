@@ -5,7 +5,7 @@
 # Deploy resources via modules. 
 
 module "plz-gov-management-groups" {
-  source = "../../../tfmodules/plz-gov-management-groups"
+  source = "../../../modules/plz-gov-management-groups"
   core_management_group_display_name = var.core_management_group_display_name
   core_management_group_id = var.core_management_group_id
   subscription_id = var.subscription_id
@@ -13,7 +13,7 @@ module "plz-gov-management-groups" {
 }
 
 module "plz-con-network-hub" {
-  source = "../../../tfmodules/plz-con-network-hub"
+  source = "../../../modules/plz-con-network-hub"
   for_each = var.enable_plz_hubvnet ? { "hub" = true } : {}
   location = var.location # Get from TFVARS file.
   naming = var.naming # Get from TFVARS file.
@@ -23,7 +23,7 @@ module "plz-con-network-hub" {
 }
 
 module "plz-log-monitor-diagnostics" {
-  source = "../../../tfmodules/plz-log-monitor-diagnostics"
+  source = "../../../modules/plz-log-monitor-diagnostics"
   for_each = var.enable_plz_logging ? { "log" = true } : {}
   location = var.location # Get from TFVARS file.
   naming = var.naming # Get from TFVARS file.
