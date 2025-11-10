@@ -25,14 +25,14 @@ resource "azurerm_storage_container" "iac_cn" {
 # Github: Secrets and Variables
 #=================================================================#
 
-# # Get data for existing Github Repository.
-# data "github_repository" "gh_repository" {
-#   full_name = "${var.github_config["org"]}/${var.github_config["repo"]}"
-# }
+# Get data for existing Github Repository.
+data "github_repository" "gh_repo" {
+  full_name = "${var.github_config["org"]}/${var.github_config["repo"]}"
+}
 
-# # Github: Variables - IaC Backend details (called during GHA workflows.)
-# resource "github_actions_variable" "gh_var_iac_cn" {
-#   repository       = data.github_repository.gh_repository.name
-#   variable_name    = "ARM_IAC_BACKEND_CN"
-#   value            = data.azurerm_storage_account.iac_sa
-# }
+resource "github_actions_environment_variable" "gh_repo_env_var" {
+  repository       = data.github_repository.gh_repo.name
+  environment      = var.github_repo_env
+  variable_name    = "ARM_IAC_BACKEND_CN"
+  value            = azurerm_storage_container.iac_cn.name
+}

@@ -22,8 +22,8 @@ variable "iac_sa_name" {
   type        = string
 }
 
-variable "gha_token" {
-  description = "Github Actions token for modifying environment secrets."
-  type        = string
-  sensitive   = true
+variable "github_config" {
+  description = "A map of Github settings."
+  type        = map(string)
+  default     = {}
 }
