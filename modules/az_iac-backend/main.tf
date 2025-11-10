@@ -5,6 +5,27 @@
 #=================================================================#
 
 #=================================================================#
+# Azure: Entra ID Service Principal - Add Repo Credential
+#=================================================================#
+
+# Get current service principal data.
+data "azuread_client_config" "current" {}
+
+data "azuread_application" "this_sp" {
+  client_id = data.azuread_client_config.current.client_id
+}
+
+# Federated credential for Service Principal (to be used with GitHub OIDC).
+resource "azuread_application_federated_identity_credential" "entra_iac_app_cred" {
+  application_id = data.azuread_application.this_sp.id
+  display_name   = "GithubActions-${var.github_config["env"]}"
+  description    = "[GithubActions]: ${var.github_config["org"]}/${var.github_config["repo"]} ENV:${var.github_config["env"]}"
+  audiences      = ["api://AzureADTokenExchange"]
+  issuer         = "https://token.actions.githubusercontent.com"
+  subject        = "repo:${var.github_config["org"]}/${var.github_config["repo"]}:environment:${var.github_config["env"]}"
+}
+
+#=================================================================#
 # Azure: Backend Resources
 #=================================================================#
 

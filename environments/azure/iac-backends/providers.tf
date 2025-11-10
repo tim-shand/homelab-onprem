@@ -5,10 +5,18 @@ terraform {
           source  = "hashicorp/azurerm"
           version = "~> 4.40.0"
       }
+      azuread = {
+          source  = "hashicorp/azuread"
+          version = "~> 3.5.0"
+      }
+      random = {
+          source  = "hashicorp/random"
+          version = "~> 3.7.2"
+      }
       github = {
-        source = "integrations/github"
-        version = "~>6.7.5"
-    }
+          source  = "integrations/github"
+          version = "~> 6.6.0"
+      }
   }
   backend "azurerm" {} # Use dynamic backend supplied in GHA workflow, AFTER bootstrap process.
 }
