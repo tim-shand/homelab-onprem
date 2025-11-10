@@ -27,8 +27,3 @@ variable "github_config" {
   type        = map(string)
   default     = {}
 }
-
-variable "github_repo_env" {
-  description = "Name of the Github repo environment to add secrets and variables"
-  type        = string
-}

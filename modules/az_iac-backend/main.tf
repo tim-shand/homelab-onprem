@@ -32,7 +32,7 @@ data "github_repository" "gh_repo" {
 
 resource "github_actions_environment_variable" "gh_repo_env_var" {
   repository       = data.github_repository.gh_repo.name
-  environment      = var.github_repo_env
+  environment      = var.github_config["env"]
   variable_name    = "ARM_IAC_BACKEND_CN"
   value            = azurerm_storage_container.iac_cn.name
 }
