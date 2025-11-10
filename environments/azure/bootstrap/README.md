@@ -2,7 +2,7 @@
 
 _Run-once Terraform deployment to bootstrap Azure environment for management via IaC using Github Actions._
 
-This bootstrap deployment will create resources in both Azure and Github required for future deployments using Github Actions workflows. This allows for centralized storage of workload and platform project state files. This can be helpful when utilizing a monolithic style repository, as all project state files can be managed from the one location. 
+This bootstrap deployment will create resources in both Azure and Github required for future deployments using Github Actions workflows. This allows for centralized storage of workload and platform project state files. This can be helpful when utilizing a monolithic style repository, as all project state files can be managed from the one location.  
 
 **Example:**  
 
