@@ -47,7 +47,7 @@ jobs:
       TF_BACKEND_SA_NAME: ${{ vars.ARM_IAC_BACKEND_SA }} # IaC Core: Storage Account
       TF_BACKEND_CN_NAME: ${{ vars.ARM_IAC_BACKEND_CN }} # IaC Core: Container
       CONFIG_DIRECTORY: "./environments/azure/iac-backends" # Directory containing Terraform configuration files.
-      TFSTATE_FILE: "azure-mgt-iac-core.tfstate"
+      TFSTATE_FILE: "azure-mgt-iac-backends.tfstate"
 
     defaults:
       run:
@@ -63,6 +63,7 @@ jobs:
           terraform_version: 1.13.1
 
       - name: "Terraform: Initialize"
+        timeout-minutes: 2
         run: |
           terraform init -backend-config="subscription_id=$ARM_SUBSCRIPTION_ID_IAC" \
           -backend-config="resource_group_name=$TF_BACKEND_RG_NAME" \
@@ -71,6 +72,7 @@ jobs:
           -backend-config="key=$TFSTATE_FILE"
 
       - name: "Terraform: Plan"
+        timeout-minutes: 2
         if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.action == 'Plan' || github.event.inputs.action == 'Plan-Apply'}}
         run: |
           terraform plan -out=tfplan \
