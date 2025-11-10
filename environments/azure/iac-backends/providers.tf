@@ -13,6 +13,3 @@ provider "azurerm" {
   tenant_id       = var.tenant_id
   subscription_id = var.subscription_id_iac # Uses dedicated IaC subscription.
 }
-provider "github" {}
-
-data "azurerm_subscription" "current" {} # Get current Azure CLI subscription.
