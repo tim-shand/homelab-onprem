@@ -18,5 +18,5 @@ provider "azurerm" {
   subscription_id = var.subscription_id_iac # Uses dedicated IaC subscription.
 }
 provider "github" {
-  token = var.gha_token
+  #token = var.gha_token
 }

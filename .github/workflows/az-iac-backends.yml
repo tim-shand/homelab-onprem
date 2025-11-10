@@ -38,6 +38,7 @@ jobs:
 
     env: # Set environment variables for runner.
       # Repo:
+      GITHUB_TOKEN: ${{ secrets.GHA_TOKEN }} # Github OAuth token for modifying environment secrets.
       ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }} # Use GitHub Secrets for sensitive data.
       ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }} # Service Principal Client ID
       ARM_USE_OIDC: ${{ secrets.ARM_USE_OIDC }} # Use OIDC for authentication
