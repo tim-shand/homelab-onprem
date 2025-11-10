@@ -3,6 +3,7 @@
 Welcome to my personal home lab! :wave:
 This project provides an environment for self-hosting and experimenting with different technologies. 
 A base for hands-on learning, developing knowledge and improving skills in DevOps and Cloud platforms.
+Bootstrapped, deployed and continuously managed using Terraform and GitHub Actions workflows.  
 
 ## :office: Physical Hardware
 
@@ -24,21 +25,36 @@ A base for hands-on learning, developing knowledge and improving skills in DevOp
 
 ## :cloud: Cloud Services
 
-- **Azure**
-  - Platform Landing Zone and web app services.
-  - Repo: [Homelab-Azure](https://github.com/tim-shand/homelab-azure)
-- **Cloudflare**
-  - Several DNS zones are configured in Cloudflare, and used for various personal projects.
-- **Github**
-  - Housing the project and providing code repository.
-  - Github Actions for automation pipelines.
+### Azure
+
+Configured with a light, simplified platform landing zone for connectivity and shared resources. 
+- Entra ID for identity and service principal provisioning. 
+- Hub/Spoke network topology, with hub VNet providing a centralalized connectivity for workload spoke VNets peering.
+
+This design utilizes a dedicated Azure subscription to contain the remote Terraform states for all deployments. 
+- Created using during my Terraform bootstrap deployment process (_see_ `environments\azure\bootstrap` :eyes:).
+- Uses a simple Terraform module to generate additional Azure resources for new project remote states. 
+
+### Cloudflare
+
+- Domain registrar and DNS provider for personal domain names. 
+- DNS zones can be updated using Terraform resources. 
+
+### Github + Actions
+
+- Housing the project and providing code repository. 
+- Github Actions for automation pipelines (workflows). 
+- Utilizing both repository and environment specific variables/secrets in Github.
+- Requires additional environment-specific credential in Azure under `Entra ID > App Registration > Credentials & Secrets > Federated Credentials`. 
+  - Mgt-PlatformLandingZone
+  - App-wwwtshandcom
 
 ## :hammer_and_wrench: Deployment Tool Set
 
 - **Infrastructre-as-Code (IaC)**
   - **[Bicep](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/)** _(DECOM)_
     - Declarative, domain-specific-language (DSL) for the Azure platform.
-    - Used to provision initial Azure resources required by Terraform (Storage Account) for utilizing a remote state/backend.
+    - Used to provision Azure infrastructre using the [AzureRM](https://registry.terraform.io/providers/hashicorp/azurerm) provider.
     - **EDIT:** In process of replacing Bicep with powershell bootstrap scripts.
   - **[Terraform](https://www.terraform.io/)**
     - Provider agnostic IaC tool, free to use, plenty of discussion, guides and support available.
@@ -46,13 +62,12 @@ A base for hands-on learning, developing knowledge and improving skills in DevOp
     - Deploy and configure Azure and Cloudflare resources.
     - Other considerations: Pulumi, OpenTofu (planning to investigate these options further).
   - **Bash/Powershell**
-    - Bootstrapping and utility scripts.
+    - Bootstrapping and misc utility scripts.
 
-## :notebook: Usage Notes
+## :memo: To Do
 
-### Terraform
-
-```bash
-terraform -chdir=environments/proxmox plan -var-file=env/prod.tfvars
-terraform -chdir=environments/proxmox apply -var-file=env/prod.tfvars
-```
+- [ ] Configure IaC for SWA remote state and GHA workflow. 
+- [ ] Configure logging for hub networking to Log Analytics Workspace. 
+- [ ] Migrate workloads to this code base. 
+- [ ] Investigate on-prem connectivity (VPN Gateway?). 
+- [ ] Investigate low-cost compute and serverless offerings in Azure. 
