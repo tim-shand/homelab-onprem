@@ -1,12 +1,13 @@
-#=================================================================#
+#=============================================================================#
 # Azure IaC Backend: Main
 # Creates: 
-# - Resources for remote state backends (dedicated subscription).
-#=================================================================#
+# - Resources for remote state backends (using dedicated subscription).
+# - REQUIRES: 
+#   - Service Principal: Application.ReadWrite.All, Directory.ReadWrite.All
+#=============================================================================#
 
 #=================================================================#
 # Azure: Entra ID Service Principal - Add Repo Credential
-# REQUIRES: Application.ReadWrite.All, Directory.ReadWrite.All
 #=================================================================#
 
 # Get current service principal data.
@@ -19,8 +20,8 @@ data "azuread_application" "this_sp" {
 # Federated credential for Service Principal (to be used with GitHub OIDC).
 resource "azuread_application_federated_identity_credential" "entra_iac_app_cred" {
   application_id = data.azuread_application.this_sp.id
-  display_name   = "GithubActions-${var.github_config["env"]}"
-  description    = "[GithubActions]: ${var.github_config["org"]}/${var.github_config["repo"]} ENV:${var.github_config["env"]}"
+  display_name   = "oidc-github-${var.github_config["repo"]}-${var.github_config["env"]}"
+  description    = "[Github-Actions]: ${var.github_config["org"]}/${var.github_config["repo"]} ENV:${var.github_config["env"]}"
   audiences      = ["api://AzureADTokenExchange"]
   issuer         = "https://token.actions.githubusercontent.com"
   subject        = "repo:${var.github_config["org"]}/${var.github_config["repo"]}:environment:${var.github_config["env"]}"
@@ -55,6 +56,6 @@ data "github_repository" "gh_repo" {
 resource "github_actions_environment_variable" "gh_repo_env_var" {
   repository       = data.github_repository.gh_repo.name
   environment      = var.github_config["env"]
-  variable_name    = "ARM_IAC_BACKEND_CN"
+  variable_name    = "TF_BACKEND_CONTAINER"
   value            = azurerm_storage_container.iac_cn.name
 }

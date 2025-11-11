@@ -1,20 +1,21 @@
 # Deployment: Azure IaC Backends
 
-This deployment uses a small Terraform module to create Azure resources to be used for remote Terraform states. 
+This deployment uses a Terraform module to create Azure resources used for remote Terraform states. Using this method enables centralized storage of workload state files, located in a dedicated Azure subscription for IaC. 
 
-This allows for centralized storage of workload and platform project state files. This can be helpful when utilizing a monolithic style repository, as all project state files can be managed from the one storage account. Permissions can be assigned as RBAC roles to each projects container. 
+- Dedicated Infrastructure-as-Code Azure subscription, with per-project containers in one storage account. 
+- Automates the container and Service Principal OIDC authentication setup for new projects. 
+- Container-level RBAC role assignments to manage access and permissions to state files. 
 
 ## Requirements
-
-- Targets: Azure IaC Subscription, Github Repo Environments.
-- Requires: Azure Service Principal: `Application.ReadWrite.All`, `Directory.ReadWrite.All`.
-- Requires: Github: OAUTH Token added to repo secrets.
+ 
+- Azure Service Principal - API Permissions: `Application.ReadWrite.All`, `Directory.ReadWrite.All`. 
+- Github OAuth Token: Added to repository secrets, referenced by Github Actions worklflow. 
 
 ## Actions
 
-- Creates containers per project in a storage account, located in the IaC Azure subscription.
-- Adds the `ARM_IAC_BACKEND_CN` variable to the specified Github repo environment.
-- Adds a federated credential (OIDC) to the service principal used for IaC deployments.
+- Creates Azure Storage Account containers per project, located in the Azure IaC subscription. 
+- Adds the `ARM_IAC_BACKEND_CN` variable to the specified Github repo environment. 
+- Adds a repo environment-specific federated credential (OIDC) to the service principal. 
 
 ## Example
 
@@ -41,3 +42,7 @@ This allows for centralized storage of workload and platform project state files
 ARM_IAC_BACKEND_CN | tfstate-azure-mgt-iac-core    | Azure-PlatformLandingZone  |
 ARM_IAC_BACKEND_CN | tfstate-azure-mgt-platformlz  | Azure-PlatformLandingZone  |
 ARM_IAC_BACKEND_CN | tfstate-azure-app             | Azure-Workload-App01       |
+
+## Considerations
+
+- One storage account per environment tier (platform, workload) instead of a single global one.

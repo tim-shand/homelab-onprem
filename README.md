@@ -3,58 +3,62 @@
 Welcome to my personal home lab! :wave:  
 This project provides an environment for self-hosting and experimenting with different technologies.  
 A base for hands-on learning, developing knowledge and improving skills in DevOps and Cloud platforms.  
-Bootstrapped, deployed and continuously managed using Terraform and GitHub Actions workflows.  
+Bootstrapped, deployed and continuously managed using Infra-as-Code and CI/CD workflows.  
 
-## :office: Physical Hardware
+## :office: Physical Hardware (On-Prem)
 
-### Hypervisors
-- 2x Lenovo Think Station P330 (Intel i5 9600T, 16GB DDR4, 250GB OS, 1TB ZFS pool).
-  - Running clustered [Proxmox VE](https://www.proxmox.com/en/products/proxmox-virtual-environment/overview) for VMs.
-  - Raspberry Pi for maintaining Quorum [details on setup found here](https://www.tshand.com/p/home-lab-part-6-setup-qdevice-for-proxmox-quorum/).
+### Hypervisors (Proxmox)
+
+- 2x Lenovo Think Station P330 (Intel i5 9600T, 16GB DDR4, 250GB OS, 1TB ZFS pool). 
+  - Running clustered [Proxmox VE](https://www.proxmox.com/en/products/proxmox-virtual-environment/overview) for VMs. 
+  - Raspberry Pi for QDevice, maintaining Quorum [details on setup found here](https://www.tshand.com/p/home-lab-part-6-setup-qdevice-for-proxmox-quorum/). 
+  - Currently investigating NAS options :eyes:. 
   
 ### Networking
-- **Switch:** TP-Link TL-SG108PE 8-Port Gigabit Easy Smart PoE Switch.
-  - Connecting nodes physically, providing outbound access to Internet via firewall connected to home WiFi network.
-- **Firewall:** HP EliteDesk G1 (Intel i5-4590T, 16 GB DDR3, 250 GB SSD).
-  - Running [OPNsense](https://opnsense.org/) providing firewall, VLAN and routing functionality.
+
+- **Switch:** TP-Link TL-SG108PE 8-Port Gigabit Easy Smart PoE Switch. 
+  - Connecting nodes physically, providing outbound access to Internet via firewall connected to home WiFi network. 
+- **Firewall:** HP EliteDesk G1 (Intel i5-4590T, 16 GB DDR3, 250 GB SSD). 
+  - Running [OPNsense](https://opnsense.org/) providing firewall, VLAN and routing functionality. 
 
 ## :computer: Virtualized Infrastructure
 
-- **Firewall/Router:** Virtualized [pfSense](https://www.pfsense.org/download/) VM (for internal lab use).
-- **Virtual Machines:** Management servers, test and misc VMs.
+- **Firewall/Router:** Virtualized [pfSense](https://www.pfsense.org/download/) VM (for internal lab use). 
+- **Virtual Machines:** Management servers, CI/CD runners, test and misc utility VMs. 
 
 ## :cloud: Cloud Services
 
 ### Azure
 
-- Configured with a light, simplified platform landing zone for connectivity and shared resources. 
-- Entra ID for identity and service principal provisioning. 
-- Hub/Spoke network topology, with hub VNet providing a centralalized connectivity for workload spoke VNets peering.
-- This design utilizes a dedicated Azure subscription to contain the remote Terraform states for all deployments. 
-- Created using during my Terraform bootstrap deployment process (_see_ `environments\azure\bootstrap` :eyes:).
-- Uses a simple Terraform module to generate additional Azure resources for new project remote states. 
+- Deployed by Github Actions, using Entra ID Service Principal secured with Federated Credentials (OIDC). 
+- Minimalistic, light-weight platform landing zone for connectivity, governance, monitoring and shared resources. 
+- Hub/Spoke network topology, with hub VNet providing a centralized connectivity for workload spoke VNet peering. 
+- Dedicated IaC subscription to contain remote Terraform states for all deployments with per-project containers. 
 
 ### Cloudflare
 
 - Domain registrar and DNS provider for personal domain names. 
-- DNS zones can be updated using Terraform resources. 
+- DNS zones updated using Terraform resources. 
 
 ### Github + Actions
 
-- Housing the project and providing code repository. 
-- Github Actions for automation pipelines (workflows). 
-- Utilizing both repository and environment specific variables/secrets in Github.
-  - Requires additional environment-specific credential in Azure under `Entra ID > App Registration > Credentials & Secrets > Federated Credentials`. 
+- Houses the overall project and providing code repository. 
+- Github Actions for automating deployments via workflows. 
+- Utilizing both top-level repository and environment-specific variables/secrets. 
+  - Note: Requires additional environment-specific OIDC credential in Azure under `Entra ID > App Registration > Credentials & Secrets > Federated Credentials`. 
 
 ## :hammer_and_wrench: Deployment Tool Set
 
 - **[Terraform](https://www.terraform.io/)**
-  - Provider agnostic IaC tool, free to use, plenty of discussion, guides and support available.
-  - Used to provision Proxmox infrastructre using the [BGP](https://registry.terraform.io/providers/bpg/proxmox/latest) provider.
-  - Deploy and configure Azure and Cloudflare resources.
-  - Other considerations: Pulumi, OpenTofu (planning to investigate these options further).
+  - Provider agnostic IaC tool, free to use, plenty of discussion, guides and support available. 
+  - Used to provision Proxmox infrastructre using the [BGP](https://registry.terraform.io/providers/bpg/proxmox/latest) provider. 
+  - Deploy and configure on-prem and cloud resources using dedicated providers. 
+  - Other considerations: Pulumi, OpenTofu. 
+- **Github Actions: Self-hosted Runners**
+  - Extends Github Actions workflows to allow management of on-prem environments. 
+  - Can be run on a dedicated VM within Proxmox. 
 - **Bash/Powershell**
-  - Bootstrapping and misc utility scripts.
+  - Bootstrapping and misc utility scripts. 
 
 ## :memo: To Do
 
