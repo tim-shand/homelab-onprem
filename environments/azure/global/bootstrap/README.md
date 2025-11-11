@@ -11,7 +11,7 @@ This bootstrap deployment will create resources in both Azure and Github require
 - **Azure:** Existing Azure account with `contributor` role assigned to a _dedicated_ subscription for IaC.
 - **Github:** Existing Github account with a repository for the Azure project.
 
-### Applications (Installed Locally)
+### Required Applications (Installed & Authenticated Locally)
 
 - **[Terraform](https://developer.hashicorp.com/terraform/install):** Used to deploy resources to target Azure environment. 
 - **[Azure CLI](https://learn.microsoft.com/en-us/cli/azure/?view=azure-cli-latest):** Required by Terraform `AzureRM` provider to connect to Azure. 

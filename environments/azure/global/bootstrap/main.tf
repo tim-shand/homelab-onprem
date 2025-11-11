@@ -90,26 +90,27 @@ resource "azurerm_storage_account" "iac_sa" {
   tags                     = var.tags
 }
 
-# Storage Container.
-resource "azurerm_storage_container" "iac_cn" {
-  name                  = "tfstate-azure-mgt-iac-core"
-  storage_account_id    = azurerm_storage_account.iac_sa.id
-  container_access_type = "private"
-}
-
-# Assign 'Storage Data Contributor' role for current user.
+# RBAC: Assign 'Storage Data Contributor' role for current user.
 resource "azurerm_role_assignment" "rbac_sa_cu" {
   scope                = azurerm_storage_account.iac_sa.id
   role_definition_name = "Storage Blob Data Contributor"
   principal_id         = data.azuread_client_config.current.object_id
 }
 
-# Assign 'Storage Data Contributor' role for SP.
+# RBAC: Assign 'Storage Data Contributor' role for SP.
 resource "azurerm_role_assignment" "rbac_sa_sp" {
   scope                = azurerm_storage_account.iac_sa.id
   role_definition_name = "Storage Blob Data Contributor"
   principal_id         = azuread_service_principal.entra_iac_sp.object_id
 }
+
+# Storage Account Container.
+resource "azurerm_storage_container" "iac_sa_cn" {
+  name                  = "tfstate-azure-${var.naming["project"]}" # Platform
+  storage_account_id    = azurerm_storage_account.iac_sa.id
+  container_access_type = "private"
+}
+
 
 #=================================================================#
 # Github: Secrets and Variables
@@ -121,45 +122,51 @@ data "github_repository" "gh_repository" {
 }
 
 # Github: Secrets - Add Federated Identity Credential (OIDC).
-resource "github_actions_secret" "gh_tenant_id" {
+resource "github_actions_secret" "gh_secret_tenant_id" {
   repository      = data.github_repository.gh_repository.name
   secret_name     = "ARM_TENANT_ID"
   plaintext_value = data.azuread_client_config.current.tenant_id
 }
 
-resource "github_actions_secret" "gh_subscription_id_iac" {
+resource "github_actions_secret" "gh_secret_subscription_id" {
   repository      = data.github_repository.gh_repository.name
-  secret_name     = "ARM_SUBSCRIPTION_ID_IAC"
+  secret_name     = "ARM_SUBSCRIPTION_ID"
   plaintext_value = var.subscription_id_iac # Primary platform subscription ID.
 }
 
-resource "github_actions_secret" "gh_client_id" {
+resource "github_actions_secret" "gh_secret_client_id" {
   repository      = data.github_repository.gh_repository.name
   secret_name     = "ARM_CLIENT_ID"
   plaintext_value = azuread_application.entra_iac_app.client_id # Service Principal federated credential ID.
 }
 
-resource "github_actions_secret" "gh_use_oidc" {
+resource "github_actions_secret" "gh_secret_use_oidc" {
   repository      = data.github_repository.gh_repository.name
   secret_name     = "ARM_USE_OIDC" # Must be set to "true" to use OIDC.
   plaintext_value = "true"
 }
 
-# Github: Variables - IaC Backend details (called during GHA workflows.)
+# Github: Variables - Terraform Backend details (to be called during GHA workflows.)
 resource "github_actions_variable" "gh_var_iac_rg" {
   repository       = data.github_repository.gh_repository.name
-  variable_name    = "ARM_IAC_BACKEND_RG"
+  variable_name    = "TF_BACKEND_RG"
   value            = azurerm_resource_group.iac_rg.name
 }
 
 resource "github_actions_variable" "gh_var_iac_sa" {
   repository       = data.github_repository.gh_repository.name
-  variable_name    = "ARM_IAC_BACKEND_SA"
+  variable_name    = "TF_BACKEND_SA"
   value            = azurerm_storage_account.iac_sa.name
 }
 
 resource "github_actions_variable" "gh_var_iac_cn" {
   repository       = data.github_repository.gh_repository.name
-  variable_name    = "ARM_IAC_BACKEND_CN"
-  value            = azurerm_storage_container.iac_cn.name
+  variable_name    = "TF_BACKEND_CONTAINER"
+  value            = azurerm_storage_container.iac_sa_cn.name
+}
+
+resource "github_actions_variable" "gh_var_iac_key" {
+  repository       = data.github_repository.gh_repository.name
+  variable_name    = "TF_BACKEND_KEY" # Terraform state file name.
+  value            = "tfstate-azure-${var.naming["platform"]}-${var.naming["service"]}"
 }
