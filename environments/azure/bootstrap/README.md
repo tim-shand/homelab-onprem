@@ -4,24 +4,6 @@ _Run-once Terraform deployment to bootstrap Azure environment for management via
 
 This bootstrap deployment will create resources in both Azure and Github required for future deployments using Github Actions workflows. This allows for centralized storage of workload and platform project state files. This can be helpful when utilizing a monolithic style repository, as all project state files can be managed from the one location.  
 
-**Example:**  
-
-```markdown
-+---------------------------------------------------------+
-| Subscription: mgt-iac-sub                               |
-|                                                         |
-|  ├── mgt-iac-state-rg (Resource Group)                  |
-|  │    ├── mgtiacstatesa (Storage Account)               |
-|  │    │    ├── Container: tfstate-azure-mgt-iac-core    |
-|  │    │    │    ├── azure-mgt-iac-core.tfstate          |
-|  │    │    ├── Container: tfstate-azure-mgt-platformlz  |
-|  │    │    │    ├── azure-mgt-platformlz.tfstate        |
-|  │    │    ├── Container: tfstate-azure-app             |
-|  │    │    │    ├── azure-app.tfstate                   |
-|                 ...                                     |
-+---------------------------------------------------------+
-```
-
 ## :green_book: Requirements
 
 ### Accounts
