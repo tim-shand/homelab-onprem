@@ -32,15 +32,15 @@ resource "azuread_application_federated_identity_credential" "entra_iac_app_cred
 #=================================================================#
 
 # Data: Storage Account.
-data "azurerm_storage_account" "iac_sa" {
-  name                = var.iac_sa_name
-  resource_group_name = var.iac_sa_rg
+data "azurerm_storage_account" "iac_storage_account" {
+  name                = var.iac_storage_account_name
+  resource_group_name = var.iac_storage_account_rg
 }
 
-# Storage Container.
-resource "azurerm_storage_container" "iac_cn" {
-  name                  = var.iac_container_name
-  storage_account_id    = data.azurerm_storage_account.iac_sa.id
+# Create: Blob Storage Container.
+resource "azurerm_storage_container" "iac_storage_container" {
+  name                  = "tfstate-${var.iac_project_name}"
+  storage_account_id    = data.azurerm_storage_account.iac_storage_account.id
   container_access_type = "private"
 }
 
