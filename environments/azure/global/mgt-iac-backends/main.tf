@@ -8,7 +8,7 @@ module "iac_backends" {
   source = "../../../../modules/azure/vending-iac-backend"
   iac_storage_account_rg = var.iac_storage_account_rg
   iac_storage_account_name = var.iac_storage_account_name
-  github_repo = "tim-shand/homelab"
+  github_repo = var.github_repo
   project_name = each.key # Prefixed with "tfstate": tfstate-proxmox
   create_github_env = each.value.create_github_env
 }
