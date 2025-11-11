@@ -3,7 +3,7 @@
 #=================================================================#
 
 # Backend: Proxmox (on-prem)
-module "iac_backends" {
+module "vending_iac_backends" {
   for_each = var.projects # Repeat for all listed in terraform.tfvars
   source = "../../../../modules/azure/vending-iac-backend"
   iac_storage_account_rg = var.iac_storage_account_rg
