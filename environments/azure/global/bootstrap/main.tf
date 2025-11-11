@@ -12,9 +12,12 @@ locals {
   name_part_short = "${var.naming["prefix"]}${var.naming["platform"]}${var.naming["service"]}"
 }
 
-#=================================================================#
+#=====================================================================#
 # Azure: Entra ID
-#=================================================================#
+# Requires: 
+# - Service Principal: [MSGraph: Application.ReadWrite.All]
+# Info: https://learn.microsoft.com/en-us/graph/permissions-reference
+#=====================================================================#
 
 # Create App Registration and Service Principal for IaC.
 resource "azuread_application" "entra_iac_app" {
@@ -22,6 +25,13 @@ resource "azuread_application" "entra_iac_app" {
   logo_image       = filebase64("./iac-logo.png") # Image file for SP logo.
   owners           = [data.azuread_client_config.current.object_id] # Set current user as owner.
   notes            = "Management: Service Principal for IaC." # Descriptive notes on purpose of the SP.
+  required_resource_access {
+    resource_app_id = "00000003-0000-0000-c000-000000000000" # Microsoft Graph API.
+    resource_access {
+      id   = "18a4783c-866b-4cc7-a460-3d5e5662c884" # Application.ReadWrite.OwnedBy
+      type = "Role" # Will require a GA to provide consent. 
+    }
+  }
 }
 
 # Service Principal for the App Registration.
@@ -34,7 +44,7 @@ resource "azuread_service_principal" "entra_iac_sp" {
 # Federated credential for Service Principal (to be used with GitHub OIDC).
 resource "azuread_application_federated_identity_credential" "entra_iac_app_cred" {
   application_id = azuread_application.entra_iac_app.id
-  display_name   = "GithubActions-OIDC"
+  display_name   = "GithubActions-OIDC-${var.github_config["org"]}-${var.github_config["repo"]}"
   description    = "[Bootstrap]: Github CI/CD, federated credential."
   audiences      = ["api://AzureADTokenExchange"]
   issuer         = "https://token.actions.githubusercontent.com"

@@ -45,7 +45,19 @@ This bootstrap deployment will create resources in both Azure and Github require
 - Update TFVARS file with required Github configuration and Azure naming/tagging values.
 - **:rotating_light: NOTE:** Make sure to **NEVER** store sensitive values in the TFVARS file if committing to public repository.
 
-### Deployment
+### Deployment (Scripted)
+
+```powershell
+# Execute the Powershell bootstrap script passing in the ID of the dedicated IaC subscription. 
+powershell -file ./environments/azure/global/bootstrap/bootstrapper.ps1 -AzureSubscriptionIaC "1234-1234-1234-1234"
+```
+
+```bash
+# Execute the Powershell bootstrap script passing in the ID of the dedicated IaC subscription. 
+./environments/azure/global/bootstrap/bootstrapper.sh 
+```
+
+### Deployment (Manual)
 
 1. Set both Azure tenant ID and subscription ID as bash variables.
 
@@ -114,19 +126,19 @@ terraform -chdir=environments/azure/bootstrap destroy -var-file=bootstrap.tfvars
 3. Migrate the local Terraform state to newly created Azure resources.
 
 ```shell
-# Set shell variables to Terraform outputs.
-ARM_BACKEND_RG="[RESOURCE_GROUP_NAME]" \
-ARM_BACKEND_SA="[STORAGE_ACCOUNT_NAME]" \
-ARM_BACKEND_CN="[STORAGE_ACCOUNT_CONTAINER_NAME]" \
-ARM_BACKEND_KEY="azure-mgt-iac-bootstrap.tfstate"
-echo -e "RG: $ARM_BACKEND_RG \nSA: $ARM_BACKEND_SA \nCN: $ARM_BACKEND_CN \nKEY: $ARM_BACKEND_KEY"
+# Set environment variables to Terraform outputs.
+TF_BACKEND_RG="[RESOURCE_GROUP_NAME]" \
+TF_BACKEND_SA="[STORAGE_ACCOUNT_NAME]" \
+TF_BACKEND_CONTAINER="[STORAGE_ACCOUNT_CONTAINER_NAME]" \
+TF_BACKEND_KEY="azure-mgt-iac-bootstrap.tfstate"
+echo -e "RG: $TF_BACKEND_RG \nSA: $TF_BACKEND_SA \nCN: $TF_BACKEND_CONTAINER \nKEY: $TF_BACKEND_KEY"
 
 # Migrate local state to Azure backend.
 terraform -chdir=environments/azure/bootstrap init -migrate-state -force-copy -input=false \
--backend-config="resource_group_name=$ARM_BACKEND_RG" \
--backend-config="storage_account_name=$ARM_BACKEND_SA" \
--backend-config="container_name=$ARM_BACKEND_CN" \
--backend-config="key=$ARM_BACKEND_KEY"
+-backend-config="resource_group_name=$TF_BACKEND_RG" \
+-backend-config="storage_account_name=$TF_BACKEND_SA" \
+-backend-config="container_name=$TF_BACKEND_CONTAINER" \
+-backend-config="key=$TF_BACKEND_KEY"
 ```
 
 5. Clean up local files (no longer required post-migration).
@@ -134,9 +146,9 @@ terraform -chdir=environments/azure/bootstrap init -migrate-state -force-copy -i
 ```shell
 # Remove local Terraform files, no longer required. 
 rm -r environments/azure/bootstrap/.terraform \
-environments/azure/bootstrap/.terraform.* \
-environments/azure/bootstrap/*.tfstate* \
-environments/azure/bootstrap/*.tfplan
+environments/azure/global/bootstrap/.terraform.* \
+environments/azure/global/bootstrap/*.tfstate* \
+environments/azure/global/bootstrap/*.tfplan
 ```
 
 ---
