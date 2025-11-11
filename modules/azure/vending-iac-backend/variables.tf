@@ -28,8 +28,3 @@ variable "create_github_env" {
   default = false
 }
 
-variable "github_token" {
-  description = "Github PAT token for creating environments and secrets."
-  type        = string
-  sensitive   = true
-}
