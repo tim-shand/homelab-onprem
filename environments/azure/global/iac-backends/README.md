@@ -1,4 +1,4 @@
-# Deployment: Azure IaC Backends
+# Deployment: Azure IaC Backend Vending
 
 This deployment uses a Terraform module to create Azure resources used for remote Terraform states. Using this method enables centralized storage of workload state files, located in a dedicated Azure subscription for IaC. 
 
@@ -16,35 +16,35 @@ Automatically provision required resources for new Terraform backends and secure
 ## Actions
 
 - Creates Azure Storage Account containers per project, located in the Azure IaC subscription. 
-- Adds the `ARM_IAC_BACKEND_CN` variable to the specified Github repo environment. 
+- Adds the `TF_BACKEND_CONTAINER` variable to the specified Github repo environment. 
 - Adds a repo environment-specific federated credential (OIDC) to the service principal. 
 
 ## Example
 
+### Remote State Structure
+
 ```markdown
-+---------------------------------------------------------+
-| Subscription: mgt-iac-sub                               |
-|                                                         |
-|  ├── mgt-iac-state-rg (Resource Group)                  |
-|  │    ├── mgtiacstatesa (Storage Account)               |
-|  │    │    ├── Container: tfstate-azure-mgt-iac-core    |
-|  │    │    │    ├── azure-mgt-iac-core.tfstate          |
-|  │    │    ├── Container: tfstate-azure-mgt-platformlz  |
-|  │    │    │    ├── azure-mgt-platformlz.tfstate        |
-|  │    │    ├── Container: tfstate-azure-app             |
-|  │    │    │    ├── azure-app.tfstate                   |
-|                 ...                                     |
-+---------------------------------------------------------+
+IaC Subscription: mgt-iac-sub
+├── Resource Group: mgt-iac-state-rg
+│   ├── Storage Account: mgtiacstatesa
+│   │   ├── Container: tfstate-platform
+│   │   ├── Container: tfstate-workload-app1
+│   │   └── Container: tfstate-workload-app2
+
+Platform Subscription: mgt-platform-sub
+├── Landing Zone resources (network hub, policies, log analytics)
+
+Workload Subscriptions (workload-sub-01)
+├── App1 resources
+
+Workload Subscriptions (workload-sub-02)
+├── App2 resources
 ```
 
-### Example: Environment Variables
+### Github Environment Variables
 
-| Name             | Value                         | Environment                |
-| ----             | -----                         | -----------                |
-ARM_IAC_BACKEND_CN | tfstate-azure-mgt-iac-core    | Azure-PlatformLandingZone  |
-ARM_IAC_BACKEND_CN | tfstate-azure-mgt-platformlz  | Azure-PlatformLandingZone  |
-ARM_IAC_BACKEND_CN | tfstate-azure-app             | Azure-Workload-App01       |
-
-## Considerations
-
-- One storage account per environment tier (platform, workload) instead of a single global one.
+| Name             | Value                         | Environment                 |
+| ----             | -----                         | -----------                 |
+| TF_BACKEND_CN    | tfstate-azure-mgt-iac-core    | Azure-Platform-LandingZone  |
+| TF_BACKEND_CN    | tfstate-azure-mgt-platformlz  | Azure-Platform-LandingZone  |
+| TF_BACKEND_CN    | tfstate-azure-app-myapp01     | Azure-Workload-App01        |
