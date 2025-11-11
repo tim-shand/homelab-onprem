@@ -44,9 +44,9 @@ jobs:
       ARM_USE_OIDC: ${{ secrets.ARM_USE_OIDC }} # Use OIDC for authentication
       ARM_SUBSCRIPTION_ID_IAC: ${{ secrets.ARM_SUBSCRIPTION_ID_IAC }} # Azure Subscription for Iac backends.
       # Terraform Backend:
-      TF_BACKEND_RG_NAME: ${{ vars.ARM_IAC_BACKEND_RG }} # IaC Core: Resource Group
-      TF_BACKEND_SA_NAME: ${{ vars.ARM_IAC_BACKEND_SA }} # IaC Core: Storage Account
-      TF_BACKEND_CN_NAME: ${{ vars.ARM_IAC_BACKEND_CN }} # IaC Core: Container
+      TF_BACKEND_RG_NAME: ${{ vars.TF_BACKEND_RESOURCE_GROUP }} # IaC Core: Resource Group
+      TF_BACKEND_SA_NAME: ${{ vars.TF_BACKEND_STORAGE_ACCOUNT }} # IaC Core: Storage Account
+      TF_BACKEND_CN_NAME: ${{ vars.TF_BACKEND_CONTAINER }} # IaC Core: Container
       CONFIG_DIRECTORY: "./environments/azure/iac-backends" # Directory containing Terraform configuration files.
       TFSTATE_FILE: "azure-mgt-iac-backends.tfstate"
 
