@@ -2,10 +2,10 @@
 # Azure IaC Backends: Variables
 #=================================================================#
 
-variable "subscription_id_iac" {
-  description = "Azure subscription for IaC."
-  type        = string
-}
+# variable "subscription_id_iac" {
+#   description = "Azure subscription for IaC."
+#   type        = string
+# }
 
 variable "iac_storage_account_rg" {
   description = "Resource Group of the Storage Account for IaC backends."
@@ -29,16 +29,16 @@ variable "projects" {
                 }))
 }
 
-variable "project_name" {
-  description = "Name of project for new IaC backend."
-  type        = string
-}
+# variable "project_name" {
+#   description = "Name of project for new IaC backend."
+#   type        = string
+# }
 
-variable "create_github_env" {
-  description = "Toggle the creation of Github environment and variables."
-  type = bool
-  default = false
-}
+# variable "create_github_env" {
+#   description = "Toggle the creation of Github environment and variables."
+#   type = bool
+#   default = false
+# }
 
 variable "github_token" {
   description = "Github PAT token for creating environments and secrets."
