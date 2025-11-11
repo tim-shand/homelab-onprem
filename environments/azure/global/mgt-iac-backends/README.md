@@ -10,7 +10,7 @@ Automatically provision required resources for new Terraform backends and secure
 
 ## Requirements
  
-- Azure Service Principal - API Permissions: `Application.ReadWrite.All`, `Directory.ReadWrite.All`. 
+- Azure Service Principal - API Permissions: `Application.ReadWrite.All`. 
 - Github OAuth Token: Added to repository secrets, referenced by Github Actions worklflow. 
 
 ## Actions

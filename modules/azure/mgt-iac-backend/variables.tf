@@ -17,9 +17,9 @@ variable "iac_storage_account_rg" {
   type        = string
 }
 
-variable "iac_project_name" {
-  description = "Name of the project for new IaC backend."
-  type        = string
+variable "project_config" {
+  description = "Map of project values for new IaC backend."
+  type        = map(string)
 }
 
 variable "github_config" {

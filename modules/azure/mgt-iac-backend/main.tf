@@ -39,7 +39,7 @@ data "azurerm_storage_account" "iac_storage_account" {
 
 # Create: Blob Storage Container.
 resource "azurerm_storage_container" "iac_storage_container" {
-  name                  = "tfstate-${var.iac_project_name}"
+  name                  = "tfstate-${var.project_config["env"]}-${var.project_config["name"]}"
   storage_account_id    = data.azurerm_storage_account.iac_storage_account.id
   container_access_type = "private"
 }
@@ -48,7 +48,7 @@ resource "azurerm_storage_container" "iac_storage_container" {
 # Github: Environments, Secrets, and Variables
 #=================================================================#
 
-# Ddata: Existing Github Repository.
+# Data: Existing Github Repository.
 data "github_repository" "gh_repo" {
   full_name = "${var.github_config["org"]}/${var.github_config["repo"]}"
 }
@@ -66,7 +66,7 @@ resource "github_repository_environment" "gh_repo_env" {
 # Create: Github Repo - Environment: Variable (Backend Container)
 resource "github_actions_environment_variable" "gh_repo_env_var" {
   repository       = data.github_repository.gh_repo.name
-  environment      = var.github_config["env"]
+  environment      = github_repository_environment.gh_repo_env.environment
   variable_name    = "TF_BACKEND_CONTAINER"
   value            = azurerm_storage_container.iac_storage_container.name
 }
