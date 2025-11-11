@@ -182,5 +182,5 @@ resource "github_actions_variable" "gh_var_iac_cn" {
 resource "github_actions_variable" "gh_var_iac_key" {
   repository       = data.github_repository.gh_repository.name
   variable_name    = "TF_BACKEND_KEY" # Terraform state file name.
-  value            = "tfstate-azure-${var.naming["platform"]}-${var.naming["service"]}"
+  value            = "azure-${var.naming["platform"]}-${var.naming["service"]}.tfstate"
 }
