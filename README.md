@@ -3,7 +3,7 @@
 Welcome to my personal home lab! :wave:  
 This project provides an environment for self-hosting and experimenting with different technologies.  
 A base for hands-on learning, developing knowledge and improving skills in DevOps and Cloud platforms.  
-Bootstrapped, deployed and continuously managed using Infra-as-Code and CI/CD workflows.  
+Bootstrapped, deployed, and managed using Infra-as-Code and CI/CD workflows.  
 
 ## :office: Physical Hardware (On-Prem)
 
@@ -12,7 +12,7 @@ Bootstrapped, deployed and continuously managed using Infra-as-Code and CI/CD wo
 - 2x Lenovo Think Station P330 (Intel i5 9600T, 16GB DDR4, 250GB OS, 1TB ZFS pool). 
   - Running clustered [Proxmox VE](https://www.proxmox.com/en/products/proxmox-virtual-environment/overview) for VMs. 
   - Raspberry Pi for QDevice, maintaining Quorum [details on setup found here](https://www.tshand.com/p/home-lab-part-6-setup-qdevice-for-proxmox-quorum/). 
-  - Currently investigating NAS options :eyes:. 
+  - Currently investigating NAS options to add improved high availability :eyes:. 
   
 ### Networking
 
@@ -20,6 +20,7 @@ Bootstrapped, deployed and continuously managed using Infra-as-Code and CI/CD wo
   - Connecting nodes physically, providing outbound access to Internet via firewall connected to home WiFi network. 
 - **Firewall:** HP EliteDesk G1 (Intel i5-4590T, 16 GB DDR3, 250 GB SSD). 
   - Running [OPNsense](https://opnsense.org/) providing firewall, VLAN and routing functionality. 
+  - Separate VLANs for infrastructure, management and workloads. 
 
 ## :computer: Virtualized Infrastructure
 
