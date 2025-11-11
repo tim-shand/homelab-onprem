@@ -7,24 +7,7 @@
 #=============================================================================#
 
 #=================================================================#
-# Azure: Backend Resources
-#=================================================================#
-
-# Data: Get Storage Account created during bootstrap process for IaC.
-data "azurerm_storage_account" "iac_storage_account" {
-  name                = var.iac_storage_account_name
-  resource_group_name = var.iac_storage_account_rg
-}
-
-# Create: Blob Storage Container.
-resource "azurerm_storage_container" "iac_storage_container" {
-  name                  = "tfstate-${var.iac_project_name}"
-  storage_account_id    = data.azurerm_storage_account.iac_storage_account.id
-  container_access_type = "private"
-}
-
-#=================================================================#
-# Azure: Entra ID Service Principal - Add Repo Credential
+# Azure: Entra ID Service Principal - Add OIDC Credential
 #=================================================================#
 
 # Get current service principal data.
@@ -42,6 +25,23 @@ resource "azuread_application_federated_identity_credential" "entra_iac_app_cred
   audiences      = ["api://AzureADTokenExchange"]
   issuer         = "https://token.actions.githubusercontent.com"
   subject        = "repo:${var.github_config["org"]}/${var.github_config["repo"]}:environment:${var.github_config["env"]}"
+}
+
+#=================================================================#
+# Azure: Backend Resources
+#=================================================================#
+
+# Data: Get Storage Account created during bootstrap process for IaC.
+data "azurerm_storage_account" "iac_storage_account" {
+  name                = var.iac_storage_account_name
+  resource_group_name = var.iac_storage_account_rg
+}
+
+# Create: Blob Storage Container.
+resource "azurerm_storage_container" "iac_storage_container" {
+  name                  = "tfstate-${var.iac_project_name}"
+  storage_account_id    = data.azurerm_storage_account.iac_storage_account.id
+  container_access_type = "private"
 }
 
 #=================================================================#

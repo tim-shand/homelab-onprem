@@ -27,8 +27,12 @@ resource "azuread_application" "entra_iac_app" {
   notes            = "Management: Service Principal for IaC." # Descriptive notes on purpose of the SP.
   required_resource_access {
     resource_app_id = "00000003-0000-0000-c000-000000000000" # Microsoft Graph API.
+    # resource_access {
+    #   id   = "18a4783c-866b-4cc7-a460-3d5e5662c884" # Application.ReadWrite.OwnedBy
+    #   type = "Role" # Will require a GA to provide consent. 
+    # }
     resource_access {
-      id   = "18a4783c-866b-4cc7-a460-3d5e5662c884" # Application.ReadWrite.OwnedBy
+      id   = "1bfefb4e-e0b5-418b-a88f-73c46d2cc8e9" # Application.ReadWrite.All
       type = "Role" # Will require a GA to provide consent. 
     }
   }

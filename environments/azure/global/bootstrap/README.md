@@ -72,21 +72,21 @@ echo -e "Tenant: $TENANT_ID \nSubscription: $SUBSCRIPTION_ID_IAC"
 
 ```shell
 # Terraform: Initialize (setup required providers).
-terraform -chdir=environments/azure/bootstrap init
+terraform -chdir=environments/azure/global/bootstrap init
 ```
 
 3. Validate Terraform code to check for errors and ensure syntax is correct.
 
 ```shell
 # Terraform: Validate (verify code syntax and consistency).
-terraform -chdir=environments/azure/bootstrap validate
+terraform -chdir=environments/azure/global/bootstrap validate
 ```
 
 4. Generate a Terraform plan file, passing in bash variables. This will display terminal output of intended changes.
 
 ```shell
 # Terraform: Plan (generate plan file of intended changes).
-terraform -chdir=environments/azure/bootstrap plan -out=bootstrap.tfplan -var-file=bootstrap.tfvars \
+terraform -chdir=environments/azure/global/bootstrap plan -out=bootstrap.tfplan -var-file=bootstrap.tfvars \
 -var="tenant_id=$TENANT_ID" \
 -var="subscription_id_iac=$SUBSCRIPTION_ID_IAC"
 ```
@@ -95,7 +95,7 @@ terraform -chdir=environments/azure/bootstrap plan -out=bootstrap.tfplan -var-fi
 
 ```shell
 # Terraform: Apply (deploy changes from plan file).
-terraform -chdir=environments/azure/bootstrap apply bootstrap.tfplan
+terraform -chdir=environments/azure/global/bootstrap apply bootstrap.tfplan
 ```
 
 ### Removal/Destroy (OPTIONAL)
@@ -106,7 +106,7 @@ _Useful for validating the deployment/destroy process, but not required._
 
 ```shell
 # [OPTIONAL] Terraform: Destroy (Remove all deployed changes made from plan file).
-terraform -chdir=environments/azure/bootstrap destroy -var-file=bootstrap.tfvars \
+terraform -chdir=environments/azure/global/bootstrap destroy -var-file=bootstrap.tfvars \
 -var="tenant_id=$TENANT_ID" \
 -var="subscription_id_iac=$SUBSCRIPTION_ID_IAC"
 ```
@@ -134,7 +134,7 @@ TF_BACKEND_KEY="azure-mgt-iac-bootstrap.tfstate"
 echo -e "RG: $TF_BACKEND_RG \nSA: $TF_BACKEND_SA \nCN: $TF_BACKEND_CONTAINER \nKEY: $TF_BACKEND_KEY"
 
 # Migrate local state to Azure backend.
-terraform -chdir=environments/azure/bootstrap init -migrate-state -force-copy -input=false \
+terraform -chdir=environments/azure/global/bootstrap init -migrate-state -force-copy -input=false \
 -backend-config="resource_group_name=$TF_BACKEND_RG" \
 -backend-config="storage_account_name=$TF_BACKEND_SA" \
 -backend-config="container_name=$TF_BACKEND_CONTAINER" \
