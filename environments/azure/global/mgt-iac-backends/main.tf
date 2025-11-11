@@ -2,24 +2,13 @@
 # Vending: Azure IaC Backends
 #=================================================================#
 
-#-------------------#
-# Azure
-#-------------------#
-
-# Backend: Azure - Platform Landing Zone
-module "iac_backend_plz" {
-  source = "../../../modules/azure/mgt-iac-backend"
-  subscription_id_iac = var.subscription_id_iac
+# Backend: Proxmox (on-prem)
+module "iac_backends" {
+  for_each = var.projects # Repeat for all listed in terraform.tfvars
+  source = "../../../modules/azure/vending-iac-backend"
   iac_sa_rg = var.iac_sa_rg
   iac_sa_name = var.iac_sa_name
-  github_config = {
-    org = "tim-shand" # Github organization where repository is located.
-    repo = "homelab" # Github repository to use for adding secrets and variables.
-    env = "Azure-PlatformLandingZone"
-  }
-  project_config = {
-    env = "azure"
-    platform = "mgt"
-    name = "platformlz"
-  }
+  github_repo = "tim-shand/homelab"
+  project_name = each.key # Prefixed with "tfstate": tfstate-proxmox
+  create_github_env = each.value.create_github_env
 }

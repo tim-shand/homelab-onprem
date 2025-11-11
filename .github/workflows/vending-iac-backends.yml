@@ -1,0 +1,61 @@
+name: Vending - Deploy IaC Backends (Azure/Github)
+
+on:
+  workflow_dispatch: # Run manually
+    inputs:
+      tf_action:
+        description: "Action: Plan, Apply, Destroy"
+        required: true
+        default: "Plan"
+        type: choice
+        options:
+          - "Plan"
+          - "Plan-Apply"
+          - "Destroy"
+
+permissions:
+  id-token: write # Required for OIDC auth
+  contents: read
+  issues: read
+
+jobs:
+  deploy-iac-backend:
+    name: Deploy IaC Backend
+    runs-on: ubuntu-latest
+    defaults:
+      run: # Set job defaults for 'run' commands.
+        working-directory: ./environments/azure/global/mgt-iac-backends
+    env:
+      # Azure OIDC Auth
+      ARM_USE_OIDC: true
+      ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }} # Azure: Tenant ID
+      ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }} # Azure: Service Principal ID
+      ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }} # Azure: IaC Subscription
+
+      # Terraform Backend
+      TF_BACKEND_RG: ${{ vars.TF_BACKEND_RG }} # Backend: Resource Group
+      TF_BACKEND_SA: ${{ vars.TF_BACKEND_SA }} # Backend: Storage Account
+      TF_BACKEND_CONTAINER: ${{ vars.TF_BACKEND_CONTAINER }} # Backend: Blob Container
+      TF_BACKEND_KEY: ${{ vars.TF_BACKEND_KEY }} # Backend: State file name
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.13.0
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Plan
+        if: ${{ github.event.inputs.tf_action == 'Plan' || github.event.inputs.tf_action == 'Plan-Apply' }}
+        run: |
+          terraform plan
+        
+      - name: Terraform Apply
+        if: ${{ github.event.inputs.tf_action == 'Plan-Apply' }}
+        run: |
+          terraform apply --auto-approve

@@ -13,16 +13,21 @@ terraform {
           source  = "integrations/github"
           version = "~> 6.6.0"
       }
-      random = {
-        source  = "hashicorp/random"
-        version = "~> 3.7.2"
-      }
   }
   backend "azurerm" {} # Use dynamic backend supplied in GHA workflow, AFTER bootstrap process.
 }
+
 provider "azurerm" {
   features {}
-  tenant_id       = var.tenant_id
-  subscription_id = var.subscription_id_iac # Uses dedicated IaC subscription.
+  tenant_id       = data.azuread_client_config.current.tenant_id # Get tenant from current session.
+  #subscription_id = var.subscription_id_iac # Uses dedicated IaC subscription.
+  subscription_id = data.azurerm_subscription.current.subscription_id # Uses dedicated IaC subscription.
 }
-provider "github" {}
+
+provider "github" {
+  owner = split("/", var.github_repo)[0] # Get first section from full Github repo variable. 
+  token = var.github_token # Repo secret passed in during Github Actions workflow. 
+}
+
+data "azuread_client_config" "current" {} # Get current user session data.
+data "azurerm_subscription" "current" {} # Get current Azure CLI subscription.

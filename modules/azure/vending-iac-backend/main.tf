@@ -1,17 +1,15 @@
 #=============================================================================#
-# Azure IaC Backend: Main
+# Azure IaC Backend: Vending
 # Creates: 
 # - Resources for remote state backends (using dedicated subscription).
 # - REQUIRES: 
-#   - Service Principal: Application.ReadWrite.All, Directory.ReadWrite.All
+#   - Service Principal: Application.ReadWrite.All
+#   - Github PAT Token: For creating environments, secrets and variables.
 #=============================================================================#
 
 #=================================================================#
 # Azure: Entra ID Service Principal - Add OIDC Credential
 #=================================================================#
-
-# Get current service principal data.
-data "azuread_client_config" "current" {}
 
 data "azuread_application" "this_sp" {
   client_id = data.azuread_client_config.current.client_id
@@ -20,11 +18,11 @@ data "azuread_application" "this_sp" {
 # Federated credential for Service Principal (to be used with GitHub OIDC).
 resource "azuread_application_federated_identity_credential" "entra_iac_app_cred" {
   application_id = data.azuread_application.this_sp.id
-  display_name   = "oidc-github-${var.github_config["repo"]}-${var.github_config["env"]}"
-  description    = "[Github-Actions]: ${var.github_config["org"]}/${var.github_config["repo"]} ENV:${var.github_config["env"]}"
+  display_name   = "oidc-github-${split("/", var.github_repo)[1]}-${var.project_name}"
+  description    = "[Github-Actions]: ${var.github_repo} ENV:${var.project_name}"
   audiences      = ["api://AzureADTokenExchange"]
   issuer         = "https://token.actions.githubusercontent.com"
-  subject        = "repo:${var.github_config["org"]}/${var.github_config["repo"]}:environment:${var.github_config["env"]}"
+  subject        = "repo:${var.github_repo}:environment:${var.project_name}"
 }
 
 #=================================================================#
@@ -39,7 +37,7 @@ data "azurerm_storage_account" "iac_storage_account" {
 
 # Create: Blob Storage Container.
 resource "azurerm_storage_container" "iac_storage_container" {
-  name                  = "tfstate-${var.project_config["env"]}-${var.project_config["name"]}"
+  name                  = "tfstate-${var.project_name}"
   storage_account_id    = data.azurerm_storage_account.iac_storage_account.id
   container_access_type = "private"
 }
@@ -50,12 +48,13 @@ resource "azurerm_storage_container" "iac_storage_container" {
 
 # Data: Existing Github Repository.
 data "github_repository" "gh_repo" {
-  full_name = "${var.github_config["org"]}/${var.github_config["repo"]}"
+  full_name = "${var.github_repo}" # "my-name/homelab"
 }
 
 # Create: Github Repo - Environment
 resource "github_repository_environment" "gh_repo_env" {
-  environment         = var.github_config["env"] # Get from variable map for Github. 
+  count               = var.create_github_env ? 1 : 0 # Eval the variable true/false to set count.
+  environment         = var.project_name # Get from variable map for project. 
   repository          = data.github_repository.gh_repo.name # Obtained from data call.
   deployment_branch_policy {
     protected_branches     = false # Only branches with branch protection rules can deploy to this environment.
@@ -65,6 +64,7 @@ resource "github_repository_environment" "gh_repo_env" {
 
 # Create: Github Repo - Environment: Variable (Backend Container)
 resource "github_actions_environment_variable" "gh_repo_env_var" {
+  count            = var.create_github_env ? 1 : 0 # Eval the variable true/false to set count.
   repository       = data.github_repository.gh_repo.name
   environment      = github_repository_environment.gh_repo_env.environment
   variable_name    = "TF_BACKEND_CONTAINER"

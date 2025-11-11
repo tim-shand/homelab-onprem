@@ -1,11 +1,6 @@
 #=================================================================#
-# Azure IaC Backends: Variables
+# Azure IaC Backend: Variables
 #=================================================================#
-
-variable "subscription_id_iac" {
-  description = "Azure subscription for IaC."
-  type        = string
-}
 
 variable "iac_storage_account_rg" {
   description = "Resource Group of the Storage Account for IaC backends."
@@ -20,13 +15,6 @@ variable "iac_storage_account_name" {
 variable "github_repo" {
   description = "Full path for Github repository, including organization (my-name/homelab)."
   type = string
-}
-
-variable "projects" {
-  description = "Map of project config for new IaC backends."
-  type        = map(object({
-                  create_github_env = bool
-                }))
 }
 
 variable "project_name" {
