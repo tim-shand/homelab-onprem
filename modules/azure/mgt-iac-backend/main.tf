@@ -7,6 +7,23 @@
 #=============================================================================#
 
 #=================================================================#
+# Azure: Backend Resources
+#=================================================================#
+
+# Data: Get Storage Account created during bootstrap process for IaC.
+data "azurerm_storage_account" "iac_storage_account" {
+  name                = var.iac_storage_account_name
+  resource_group_name = var.iac_storage_account_rg
+}
+
+# Create: Blob Storage Container.
+resource "azurerm_storage_container" "iac_storage_container" {
+  name                  = "tfstate-${var.iac_project_name}"
+  storage_account_id    = data.azurerm_storage_account.iac_storage_account.id
+  container_access_type = "private"
+}
+
+#=================================================================#
 # Azure: Entra ID Service Principal - Add Repo Credential
 #=================================================================#
 
@@ -28,34 +45,28 @@ resource "azuread_application_federated_identity_credential" "entra_iac_app_cred
 }
 
 #=================================================================#
-# Azure: Backend Resources
+# Github: Environments, Secrets, and Variables
 #=================================================================#
 
-# Data: Storage Account.
-data "azurerm_storage_account" "iac_storage_account" {
-  name                = var.iac_storage_account_name
-  resource_group_name = var.iac_storage_account_rg
-}
-
-# Create: Blob Storage Container.
-resource "azurerm_storage_container" "iac_storage_container" {
-  name                  = "tfstate-${var.iac_project_name}"
-  storage_account_id    = data.azurerm_storage_account.iac_storage_account.id
-  container_access_type = "private"
-}
-
-#=================================================================#
-# Github: Secrets and Variables
-#=================================================================#
-
-# Get data for existing Github Repository.
+# Ddata: Existing Github Repository.
 data "github_repository" "gh_repo" {
   full_name = "${var.github_config["org"]}/${var.github_config["repo"]}"
 }
 
+# Create: Github Repo - Environment
+resource "github_repository_environment" "gh_repo_env" {
+  environment         = var.github_config["env"] # Get from variable map for Github. 
+  repository          = data.github_repository.gh_repo.name # Obtained from data call.
+  deployment_branch_policy {
+    protected_branches     = false # Only branches with branch protection rules can deploy to this environment.
+    custom_branch_policies = false # Only branches that match the specified name patterns can deploy to this environment.
+  }
+}
+
+# Create: Github Repo - Environment: Variable (Backend Container)
 resource "github_actions_environment_variable" "gh_repo_env_var" {
   repository       = data.github_repository.gh_repo.name
   environment      = var.github_config["env"]
   variable_name    = "TF_BACKEND_CONTAINER"
-  value            = azurerm_storage_container.iac_cn.name
+  value            = azurerm_storage_container.iac_storage_container.name
 }
