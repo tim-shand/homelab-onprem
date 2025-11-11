@@ -6,6 +6,7 @@
 
 #=================================================================#
 # Azure: Entra ID Service Principal - Add Repo Credential
+# REQUIRES: Application.ReadWrite.All, Directory.ReadWrite.All
 #=================================================================#
 
 # Get current service principal data.
