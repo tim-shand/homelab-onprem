@@ -2,6 +2,8 @@
 
 This deployment uses a Terraform module to create Azure resources used for remote Terraform states. Using this method enables centralized storage of workload state files, located in a dedicated Azure subscription for IaC. 
 
+Automatically provision required resources for new Terraform backends and secure CI/CD connectivity using a single Terraform module.  
+
 - Dedicated Infrastructure-as-Code Azure subscription, with per-project containers in one storage account. 
 - Automates the container and Service Principal OIDC authentication setup for new projects. 
 - Container-level RBAC role assignments to manage access and permissions to state files. 
