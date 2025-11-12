@@ -2,10 +2,10 @@
 # Azure IaC Backends: Variables
 #=================================================================#
 
-# variable "subscription_id_iac" {
-#   description = "Azure subscription for IaC."
-#   type        = string
-# }
+variable "subscription_id_iac" {
+  description = "Azure subscription for IaC."
+  type        = string
+}
 
 variable "iac_storage_account_rg" {
   description = "Resource Group of the Storage Account for IaC backends."
