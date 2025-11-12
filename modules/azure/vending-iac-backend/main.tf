@@ -7,6 +7,18 @@
 #   - Github PAT Token: For creating environments, secrets and variables.
 #=============================================================================#
 
+# REQUIRED! :: Github provider MUST be defined in child modules to avoid issues with provider mismatch.
+# Info: https://github.com/integrations/terraform-provider-github/issues/876#issuecomment-1303790559
+
+terraform {
+  required_providers {
+    github = {
+      source = "integrations/github"
+      version = "6.7.5"
+    }
+  }
+}
+
 #=================================================================#
 # Azure: Entra ID Service Principal - Add OIDC Credential
 #=================================================================#

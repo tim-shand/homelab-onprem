@@ -24,7 +24,6 @@ provider "azurerm" {
 }
 
 provider "github" {
-  #owner = split("/", var.github_repo)[0]
   owner = var.github_config["owner"]
   token = var.github_token # Repo secret passed in during Github Actions workflow. 
 }
