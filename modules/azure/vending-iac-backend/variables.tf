@@ -27,4 +27,3 @@ variable "create_github_env" {
   type = bool
   default = false
 }
-
