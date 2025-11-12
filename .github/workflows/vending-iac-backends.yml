@@ -20,7 +20,7 @@ on:
     branches:
       - main
   
-  pull_request:
+  pull_request: # PR
     paths:
       - "environments/azure/global/mgt-iac-backends/**"
       - "modules/azure/vending-iac-backend/**"
@@ -56,20 +56,6 @@ jobs:
       # Github PAT Auth
       GH_PAT_TOKEN: ${{ secrets.GH_PAT_TOKEN }} # Required by Terraform provider to manage environments.
 
-      # Terraform CLI variables (used by plan and destroy).
-      TF_VARS: >
-        -var="github_token=$GH_PAT_TOKEN"
-        -var="iac_storage_account_rg=$TF_BACKEND_RG"
-        -var="iac_storage_account_name=$TF_BACKEND_SA"
-        -var="subscription_id_iac=$ARM_SUBSCRIPTION_ID"
-
-      # Terraform backend config (used by terraform init).
-      TF_BACKEND_CONFIG: >
-        -backend-config="resource_group_name=$TF_BACKEND_RG"
-        -backend-config="storage_account_name=$TF_BACKEND_SA"
-        -backend-config="container_name=$TF_BACKEND_CONTAINER"
-        -backend-config="key=$TF_BACKEND_KEY"
-
       # Determine if Plan should run (on commits, PR, plan and plan-apply). 
       RUN_PLAN: ${{ github.event_name == 'push' || github.event_name == 'pull_request' || github.event.inputs.tf_action == 'Plan' || github.event.inputs.tf_action == 'Plan-Apply' }}
 
@@ -91,13 +77,21 @@ jobs:
       - name: Terraform Init
         timeout-minutes: 5  # This step will fail if it runs longer than 'x' minutes.
         run: |
-          terraform init $TF_BACKEND_CONFIG
+          terraform init \
+          -backend-config="resource_group_name=$TF_BACKEND_RG" 
+          -backend-config="storage_account_name=$TF_BACKEND_SA" 
+          -backend-config="container_name=$TF_BACKEND_CONTAINER" 
+          -backend-config="key=$TF_BACKEND_KEY"
 
       - name: Terraform Plan
         if: env.RUN_PLAN == 'true'
         timeout-minutes: 5  # This step will fail if it runs longer than 'x' minutes.
         run: |
-          terraform plan -out=terraform.tfplan -var-file=terraform.tfvars $TF_VARS
+          terraform plan -out=terraform.tfplan -var-file=terraform.tfvars \
+          -var="github_token=$GH_PAT_TOKEN" 
+          -var="iac_storage_account_rg=$TF_BACKEND_RG" 
+          -var="iac_storage_account_name=$TF_BACKEND_SA" 
+          -var="subscription_id_iac=$ARM_SUBSCRIPTION_ID" 
         
       - name: Terraform Apply
         if: env.RUN_APPLY == 'true'
@@ -109,4 +103,8 @@ jobs:
         if: env.RUN_DESTROY == 'true'
         timeout-minutes: 15 # Fail if it runs longer than 'x' minutes.
         run: |
-          terraform destroy --auto-approve -var-file=terraform.tfvars $TF_VARS
+          terraform destroy --auto-approve -var-file=terraform.tfvars \
+          -var="github_token=$GH_PAT_TOKEN" 
+          -var="iac_storage_account_rg=$TF_BACKEND_RG" 
+          -var="iac_storage_account_name=$TF_BACKEND_SA" 
+          -var="subscription_id_iac=$ARM_SUBSCRIPTION_ID" 
