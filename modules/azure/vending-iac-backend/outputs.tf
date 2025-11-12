@@ -11,7 +11,7 @@ output "out_iac_cn" {
 # Github Environment Resources
 output "out_gh_env" {
   description = "Name of the newly created Github environment."
-  value = github_repository_environment.gh_repo_env.environment
+  value = github_repository_environment.gh_repo_env[0].environment
 }
 
 output "github_environment_created" {
