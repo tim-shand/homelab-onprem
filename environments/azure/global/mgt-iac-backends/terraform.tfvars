@@ -6,6 +6,6 @@ github_config = {
 }
 
 projects = {
-  "azure-test" = { create_github_env = true }
+  "azure-workload-test" = { create_github_env = true }
   #"proxmox"    = { create_github_env = true }
 }
