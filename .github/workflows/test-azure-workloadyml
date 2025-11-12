@@ -1,0 +1,113 @@
+name: Testing - Deploy Workload-Test (Azure)
+
+on:
+  workflow_dispatch: # Run manually
+    inputs:
+      tf_action:
+        description: "Action: Pre-Checks, Plan, Apply, Destroy"
+        required: true
+        default: "Pre-Checks" # "Plan"
+        type: choice
+        options:
+          - "Pre-Checks"
+          - "Plan"
+          - "Plan-Apply"
+          - "Destroy"
+
+  push: # Commits
+    paths:
+      - "environments/azure/workloads/workload-test/**"
+      - ".github/workflows/test-azure-workload.yml"
+    branches:
+      - main
+  
+  pull_request: # PR
+    paths:
+      - "environments/azure/workloads/workload-test/**"
+      - ".github/workflows/test-azure-workload.yml"
+    branches:
+      - main
+
+permissions:
+  id-token: write # Required for OIDC auth
+  contents: read
+  issues: read
+
+jobs:
+  deploy-iac-backend:
+    name: Deploy Workload-Test (Azure)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10  # The entire job will fail if it runs longer than 'x' minutes.
+    environment: azure-workload-test # Name of the Github environment.
+    defaults:
+      run: # Set job defaults for 'run' commands.
+        working-directory: ./environments/azure/workloads/workload-test
+    env:
+      # Backend (IaC subscription)
+      TF_BACKEND_RG: ${{ vars.TF_BACKEND_RG }} # Backend: Resource Group
+      TF_BACKEND_SA: ${{ vars.TF_BACKEND_SA }} # Backend: Storage Account
+      TF_BACKEND_CONTAINER: ${{ vars.TF_BACKEND_CONTAINER }} # Backend: Blob Container
+      TF_BACKEND_KEY: ${{ vars.TF_BACKEND_KEY }} # Backend: State file name
+
+      # Azure OIDC Auth
+      ARM_USE_OIDC: true
+      ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }} # Azure: Tenant ID
+      ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }} # Azure: Service Principal ID
+      ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }} # Azure: Target subscription for resources.
+
+      # Github PAT Auth
+      GH_PAT_TOKEN: ${{ secrets.GH_PAT_TOKEN }} # Required by Terraform provider to manage environments.
+
+      # Determine which steps should be run based on inputs and commits or PRs.
+      RUN_CHECK: ${{ github.event.inputs.tf_action == 'Pre-Checks' }}
+      RUN_INIT: ${{ github.event_name == 'push' || github.event_name == 'pull_request' || github.event.inputs.tf_action == 'Plan' || github.event.inputs.tf_action == 'Plan-Apply' || github.event.inputs.tf_action == 'Destroy' }}
+      RUN_PLAN: ${{ github.event_name == 'push' || github.event_name == 'pull_request' || github.event.inputs.tf_action == 'Plan' || github.event.inputs.tf_action == 'Plan-Apply' }}
+      RUN_APPLY: ${{ github.event.inputs.tf_action == 'Plan-Apply' }}
+      RUN_DESTROY: ${{ github.event.inputs.tf_action == 'Destroy' }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.13.0
+
+      - name: Pre-Checks
+        run: |
+          echo "--- Pre-Checks: Terraform Backend ---" \
+          echo "Backend: Resource Group: $TF_BACKEND_RG" \
+          echo "Backend: Storage Account: $TF_BACKEND_SA" \
+          echo "Backend: Blob Container: $TF_BACKEND_CONTAINER" \
+          echo "Backend: State Key: $TF_BACKEND_KEY"
+
+      - name: Terraform Init
+        if: env.RUN_INIT == 'true'
+        timeout-minutes: 5  # This step will fail if it runs longer than 'x' minutes.
+        run: |
+          terraform init \
+          -backend-config="resource_group_name=$TF_BACKEND_RG" \
+          -backend-config="storage_account_name=$TF_BACKEND_SA" \
+          -backend-config="container_name=$TF_BACKEND_CONTAINER" \
+          -backend-config="key=$TF_BACKEND_KEY"
+
+      - name: Terraform Plan
+        if: env.RUN_PLAN == 'true'
+        timeout-minutes: 5  # This step will fail if it runs longer than 'x' minutes.
+        run: |
+          terraform plan -out=terraform.tfplan -var-file=terraform.tfvars \
+          -var="subscription_id=$ARM_SUBSCRIPTION_ID" 
+        
+      - name: Terraform Apply
+        if: env.RUN_APPLY == 'true'
+        timeout-minutes: 15 # Fail if it runs longer than 'x' minutes.
+        run: |
+          terraform apply --auto-approve terraform.tfplan
+    
+      - name: Terraform Destroy
+        if: env.RUN_DESTROY == 'true'
+        timeout-minutes: 15 # Fail if it runs longer than 'x' minutes.
+        run: |
+          terraform destroy --auto-approve -var-file=terraform.tfvars \
+          -var="subscription_id_iac=$ARM_SUBSCRIPTION_ID" 
