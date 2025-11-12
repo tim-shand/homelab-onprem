@@ -24,12 +24,3 @@ output "github_environment_name" {
   description = "If created, output the name of the environment."
   value = var.create_github_env ? var.project_name : null
 }
-
-### DEBUG ###
-output "github_repo_debug" {
-  value = {
-    full_name = github_repository_environment.gh_repo_env.environment
-    owner     = split("/", var.github_repo)[0]
-    repo      = split("/", var.github_repo)[1]
-  }
-}

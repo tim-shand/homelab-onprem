@@ -70,7 +70,7 @@ resource "github_repository_environment" "gh_repo_env" {
 resource "github_actions_environment_variable" "gh_repo_env_var" {
   count            = var.create_github_env ? 1 : 0 # Eval the variable true/false to set count.
   #repository       = data.github_repository.gh_repo.full_name
-  repository       = github_repository_environment.gh_repo_env.repository
+  repository       = github_repository_environment.gh_repo_env[count.index].repository
   environment      = github_repository_environment.gh_repo_env[count.index].environment
   variable_name    = "TF_BACKEND_CONTAINER"
   value            = azurerm_storage_container.iac_storage_container.name
@@ -79,7 +79,7 @@ resource "github_actions_environment_variable" "gh_repo_env_var" {
 # Create: Github Repo - Environment: Variable (Backend Key)
 resource "github_actions_environment_variable" "gh_repo_env_var_key" {
   count           = var.create_github_env ? 1 : 0 # Eval the variable true/false to set count.
-  repository      = github_repository_environment.gh_repo_env.repository
+  repository      = github_repository_environment.gh_repo_env[count.index].repository
   environment     = github_repository_environment.gh_repo_env[count.index].environment
   variable_name   = "TF_BACKEND_KEY"
   value           = "tfstate-${var.project_name}.tfstate"
