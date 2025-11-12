@@ -19,6 +19,7 @@ data "azuread_application" "this_sp" {
 
 # Federated credential for Service Principal (to be used with GitHub OIDC).
 resource "azuread_application_federated_identity_credential" "entra_iac_app_cred" {
+  count          = var.create_github_env ? 1 : 0 # Only needed is GH environment is created.
   application_id = data.azuread_application.this_sp.id
   display_name   = "oidc-github-${split("/", var.github_repo)[1]}-${var.project_name}"
   description    = "[Github-Actions]: ${var.github_repo} ENV:${var.project_name}"
@@ -68,7 +69,7 @@ resource "github_repository_environment" "gh_repo_env" {
 resource "github_actions_environment_variable" "gh_repo_env_var" {
   count            = var.create_github_env ? 1 : 0 # Eval the variable true/false to set count.
   repository       = data.github_repository.gh_repo.name
-  environment      = github_repository_environment.gh_repo_env[0].environment
+  environment      = github_repository_environment.gh_repo_env[count.index].environment
   variable_name    = "TF_BACKEND_CONTAINER"
   value            = azurerm_storage_container.iac_storage_container.name
 }
