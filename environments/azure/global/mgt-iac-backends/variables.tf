@@ -44,4 +44,8 @@ variable "github_token" {
   description = "Github PAT token for creating environments and secrets."
   type        = string
   sensitive   = true
+  validation {
+    condition     = var.create_github_env == false || var.github_token != ""
+    error_message = "GitHub token must be provided when create_github_env = true."
+  }
 }
