@@ -28,7 +28,7 @@ output "github_environment_name" {
 ### DEBUG ###
 output "github_repo_debug" {
   value = {
-    full_name = data.github_repository.gh_repo.full_name
+    full_name = github_repository_environment.gh_repo_env.environment
     owner     = split("/", var.github_repo)[0]
     repo      = split("/", var.github_repo)[1]
   }
