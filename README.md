@@ -32,15 +32,14 @@ Bootstrapped, deployed, and managed using Infra-as-Code and CI/CD workflows.
 ### Azure
 
 - Automated bootstrapping using Powershell script.
-  - Generates required Terraform files, kicks of deployment, triggers post-deployment state migration to Azure. 
-  - Creates Entra ID Service Principal, secured with Federated Credentials (OIDC), and added to specified Github repository. 
+  - Generates required Terraform files, kicks off the deployment, and triggers post-deployment state migration to Azure. 
+  - Creates Entra ID Service Principal, secured with Federated Credentials (OIDC), and adds details to a specified Github repository. 
 - Minimalistic, light-weight platform landing zone for connectivity, governance, monitoring and shared resources. 
 - Hub/Spoke network topology, with hub VNet providing a centralized connectivity for workload spoke VNet peering. 
 - IaC Backend Vending.
-  - Dedicated IaC subscription to contain remote Terraform states for all deployments, with per-project backends.
-  - Each project backend is configured using an **IaC Backend Vending** module to create storage and Github resources. 
-  - Azure Blob Container held in the IaC subscription. 
-  - Creates a Github repository environment, with target resource Azure subscription stored in environment secrets.  
+  - Dedicated IaC subscription to contain remote Terraform states for all deployments, with per-project Azure Blob Containers. 
+  - Each project backend is deployed using an IaC Backend Vending module to create storage and Github resources. 
+  - Creates a Github repository environment, with target resource Azure subscription stored in environment secrets. 
 
 ### Cloudflare
 
@@ -49,18 +48,17 @@ Bootstrapped, deployed, and managed using Infra-as-Code and CI/CD workflows.
 
 ### Github + Actions
 
-- Houses the overall project and providing code repository. 
-- Github Actions for automating deployments via workflows. 
+- Contains the overall project and provides centralized code repository. 
+- Github Actions providing CI/CD by automating deployments via workflows. 
 - Utilizing both top-level repository and environment variables/secrets for specific workloads. 
 
 ## :hammer_and_wrench: Deployment Tool Set
 
 - **[Terraform](https://www.terraform.io/)**
   - Provider agnostic IaC tool, free to use, plenty of discussion, guides and support available. 
-  - Used to provision Proxmox infrastructre using the [BGP](https://registry.terraform.io/providers/bpg/proxmox/latest) provider. 
-  - Deploy and configure on-prem and cloud resources using dedicated providers. 
+  - Deploy and manage on-prem and cloud resources using dedicated providers. 
   - Other considerations: Pulumi, OpenTofu. 
-- **Github Actions: Self-hosted Runners**
+- **Github Actions: Self-hosted Runners (PENDING)**
   - Extends Github Actions workflows to allow management of on-prem environments. 
   - Can be run on a dedicated VM within Proxmox. 
 - **Bash/Powershell**
@@ -68,8 +66,8 @@ Bootstrapped, deployed, and managed using Infra-as-Code and CI/CD workflows.
 
 ## :memo: To Do
 
-- [ ] Configure IaC for SWA remote state and GHA workflow. 
+- [ ] Setup self-hosted Github Runner on-prem. 
+- [ ] Update IaC Backend vending to add target resource subscription to GH env secrets. 
 - [ ] Configure logging for hub networking to Log Analytics Workspace. 
-- [ ] Migrate workloads to this code base. 
 - [ ] Investigate on-prem connectivity (VPN Gateway?). 
 - [ ] Investigate low-cost compute and serverless offerings in Azure. 
