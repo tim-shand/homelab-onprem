@@ -17,9 +17,9 @@ variable "iac_storage_account_name" {
   type        = string
 }
 
-variable "github_repo" {
-  description = "Full path for Github repository, including organization (my-name/homelab)."
-  type = string
+variable "github_config" {
+  description = "Map of values for Github configuration."
+  type = map(string)
 }
 
 variable "projects" {
@@ -28,17 +28,6 @@ variable "projects" {
                   create_github_env = bool
                 }))
 }
-
-# variable "project_name" {
-#   description = "Name of project for new IaC backend."
-#   type        = string
-# }
-
-# variable "create_github_env" {
-#   description = "Toggle the creation of Github environment and variables."
-#   type = bool
-#   default = false
-# }
 
 variable "github_token" {
   description = "Github PAT token for creating environments and secrets."

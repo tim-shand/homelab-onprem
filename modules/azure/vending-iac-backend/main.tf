@@ -21,11 +21,11 @@ data "azuread_application" "this_sp" {
 resource "azuread_application_federated_identity_credential" "entra_iac_app_cred" {
   count          = var.create_github_env ? 1 : 0 # Only needed is GH environment is created.
   application_id = data.azuread_application.this_sp.id
-  display_name   = "oidc-github-${split("/", var.github_repo)[1]}-${var.project_name}"
-  description    = "[Github-Actions]: ${var.github_repo} ENV:${var.project_name}"
+  display_name   = "oidc-github-${var.github_config["repo"]}-${var.project_name}"
+  description    = "[Github-Actions]: ${var.github_config["repo"]} ENV:${var.project_name}"
   audiences      = ["api://AzureADTokenExchange"]
   issuer         = "https://token.actions.githubusercontent.com"
-  subject        = "repo:${var.github_repo}:environment:${var.project_name}"
+  subject        = "repo:${var.github_config["owner"]}/${var.github_config["repo"]}:environment:${var.project_name}"
 }
 
 #=================================================================#
@@ -51,15 +51,14 @@ resource "azurerm_storage_container" "iac_storage_container" {
 
 # Data: Existing Github Repository.
 # data "github_repository" "gh_repo" {
-#   full_name = var.github_repo # "my-name/homelab"
+#   full_name = "${var.github_config["owner"]}/${var.github_config["repo"]}" # "my-name/homelab"
 # }
 
 # Create: Github Repo - Environment
 resource "github_repository_environment" "gh_repo_env" {
   count               = var.create_github_env ? 1 : 0 # Eval the variable true/false to set count.
   environment         = var.project_name # Get from variable map for project. 
-  #repository          = data.github_repository.gh_repo.full_name # Obtained from data call.
-  repository          = var.github_repo
+  repository          = var.github_config["repo"]
   deployment_branch_policy {
     protected_branches     = false # Only branches with branch protection rules can deploy to this environment.
     custom_branch_policies = false # Only branches that match the specified name patterns can deploy to this environment.

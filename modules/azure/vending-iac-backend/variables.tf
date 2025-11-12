@@ -12,9 +12,9 @@ variable "iac_storage_account_name" {
   type        = string
 }
 
-variable "github_repo" {
-  description = "Full path for Github repository, including organization (my-name/homelab)."
-  type = string
+variable "github_config" {
+  description = "Map of values for Github configuration."
+  type = map(string)
 }
 
 variable "project_name" {

@@ -24,8 +24,8 @@ provider "azurerm" {
 }
 
 provider "github" {
-  #owner = split("/", var.github_repo)[0] # Get first section (org) from full Github repo variable. 
-  # ^ Not needed when using full "owner/repo" variable (causing issues).
+  #owner = split("/", var.github_repo)[0]
+  owner = var.github_config["owner"]
   token = var.github_token # Repo secret passed in during Github Actions workflow. 
 }
 
