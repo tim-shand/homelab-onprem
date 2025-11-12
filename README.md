@@ -31,10 +31,12 @@ Bootstrapped, deployed, and managed using Infra-as-Code and CI/CD workflows.
 
 ### Azure
 
-- Deployed by Github Actions, using Entra ID Service Principal secured with Federated Credentials (OIDC). 
+- Automated bootstrapping using Powershell script.
+  - Generates required Terraform files, kicks of deployment, triggers post-deployment state migration to Azure. 
+  - Creates Entra ID Service Principal, secured with Federated Credentials (OIDC), and added to specified Github repository. 
 - Minimalistic, light-weight platform landing zone for connectivity, governance, monitoring and shared resources. 
 - Hub/Spoke network topology, with hub VNet providing a centralized connectivity for workload spoke VNet peering. 
-- IaC Backend Vending:
+- IaC Backend Vending.
   - Dedicated IaC subscription to contain remote Terraform states for all deployments, with per-project backends.
   - Each project backend is configured using an **IaC Backend Vending** module to create storage and Github resources. 
   - Azure Blob Container held in the IaC subscription. 
