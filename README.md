@@ -34,7 +34,11 @@ Bootstrapped, deployed, and managed using Infra-as-Code and CI/CD workflows.
 - Deployed by Github Actions, using Entra ID Service Principal secured with Federated Credentials (OIDC). 
 - Minimalistic, light-weight platform landing zone for connectivity, governance, monitoring and shared resources. 
 - Hub/Spoke network topology, with hub VNet providing a centralized connectivity for workload spoke VNet peering. 
-- Dedicated IaC subscription to contain remote Terraform states for all deployments with per-project containers. 
+- IaC Backend Vending:
+  - Dedicated IaC subscription to contain remote Terraform states for all deployments, with per-project backends.
+  - Each project backend is configured using an **IaC Backend Vending** module to create storage and Github resources. 
+  - Azure Blob Container held in the IaC subscription. 
+  - Creates a Github repository environment, with target resource Azure subscription stored in environment secrets.  
 
 ### Cloudflare
 
@@ -45,8 +49,7 @@ Bootstrapped, deployed, and managed using Infra-as-Code and CI/CD workflows.
 
 - Houses the overall project and providing code repository. 
 - Github Actions for automating deployments via workflows. 
-- Utilizing both top-level repository and environment-specific variables/secrets. 
-  - Note: Requires additional environment-specific OIDC credential in Azure under `Entra ID > App Registration > Credentials & Secrets > Federated Credentials`. 
+- Utilizing both top-level repository and environment variables/secrets for specific workloads. 
 
 ## :hammer_and_wrench: Deployment Tool Set
 
