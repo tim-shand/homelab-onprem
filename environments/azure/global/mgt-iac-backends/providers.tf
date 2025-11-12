@@ -11,7 +11,7 @@ terraform {
       }
       github = {
           source  = "integrations/github"
-          version = "~> 6.6.0"
+          version = "~> 6.7.5"
       }
   }
   backend "azurerm" {} # Use dynamic backend supplied in GHA workflow, AFTER bootstrap process.
