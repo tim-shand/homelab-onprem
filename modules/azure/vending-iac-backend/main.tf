@@ -22,7 +22,7 @@ resource "azuread_application_federated_identity_credential" "entra_iac_app_cred
   count          = var.create_github_env ? 1 : 0 # Only needed is GH environment is created.
   application_id = data.azuread_application.this_sp.id
   display_name   = "oidc-github-${var.github_config["repo"]}-${var.project_name}"
-  description    = "[Github-Actions]: ${var.github_config["repo"]} ENV:${var.project_name}"
+  description    = "[Github-Actions]: ${var.github_config["owner"]}/${var.github_config["repo"]} ENV:${var.project_name}"
   audiences      = ["api://AzureADTokenExchange"]
   issuer         = "https://token.actions.githubusercontent.com"
   subject        = "repo:${var.github_config["owner"]}/${var.github_config["repo"]}:environment:${var.project_name}"
@@ -58,7 +58,7 @@ resource "azurerm_storage_container" "iac_storage_container" {
 resource "github_repository_environment" "gh_repo_env" {
   count               = var.create_github_env ? 1 : 0 # Eval the variable true/false to set count.
   environment         = var.project_name # Get from variable map for project. 
-  repository          = var.github_config["repo"]
+  repository          = "${var.github_config["owner"]}/${var.github_config["repo"]}"
   deployment_branch_policy {
     protected_branches     = false # Only branches with branch protection rules can deploy to this environment.
     custom_branch_policies = false # Only branches that match the specified name patterns can deploy to this environment.
