@@ -15,11 +15,9 @@ terraform {
 
 provider "azurerm" {
   features {}
-  tenant_id       = data.azuread_client_config.current.tenant_id # Get tenant from current session.
+  #tenant_id       = data.azuread_client_config.current.tenant_id # Get tenant from current session.
   subscription_id = var.subscription_id # Project specific subscription.
 }
 
 provider "random" {
 }
-
-data "azurerm_subscription" "current" {} # Get current Azure CLI subscription.
