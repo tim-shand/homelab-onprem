@@ -11,8 +11,10 @@
 # Azure: Entra ID Service Principal - Add OIDC Credential
 #=================================================================#
 
+data "azuread_client_config" "current" {} # Get current user session data.
+
 data "azuread_application" "this_sp" {
-  client_id = data.azuread_client_config.current.client_id
+  client_id = data.azuread_client_config.current.client_id # Get this SP data.
 }
 
 # Federated credential for Service Principal (to be used with GitHub OIDC).
@@ -66,7 +68,7 @@ resource "github_repository_environment" "gh_repo_env" {
 resource "github_actions_environment_variable" "gh_repo_env_var" {
   count            = var.create_github_env ? 1 : 0 # Eval the variable true/false to set count.
   repository       = data.github_repository.gh_repo.name
-  environment      = github_repository_environment.gh_repo_env.environment
+  environment      = github_repository_environment.gh_repo_env[0].environment
   variable_name    = "TF_BACKEND_CONTAINER"
   value            = azurerm_storage_container.iac_storage_container.name
 }
