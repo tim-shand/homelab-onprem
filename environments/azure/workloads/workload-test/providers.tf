@@ -12,12 +12,14 @@ terraform {
   }
   backend "azurerm" {} # Use dynamic backend supplied in GHA workflow.
 }
+
 provider "azurerm" {
   features {}
   tenant_id       = data.azuread_client_config.current.tenant_id # Get tenant from current session.
   subscription_id = var.subscription_id # Project specific subscription.
 }
+
 provider "random" {
 }
-data "azuread_client_config" "current" {} # Get current user session data.
+
 data "azurerm_subscription" "current" {} # Get current Azure CLI subscription.

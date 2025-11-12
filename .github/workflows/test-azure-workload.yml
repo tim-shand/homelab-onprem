@@ -4,12 +4,11 @@ on:
   workflow_dispatch: # Run manually
     inputs:
       tf_action:
-        description: "Action: Pre-Checks, Plan, Apply, Destroy"
+        description: "Action: Plan, Apply, Destroy"
         required: true
-        default: "Pre-Checks" # "Plan"
+        default: "Plan"
         type: choice
         options:
-          - "Pre-Checks"
           - "Plan"
           - "Plan-Apply"
           - "Destroy"
@@ -59,8 +58,6 @@ jobs:
       GH_PAT_TOKEN: ${{ secrets.GH_PAT_TOKEN }} # Required by Terraform provider to manage environments.
 
       # Determine which steps should be run based on inputs and commits or PRs.
-      RUN_CHECK: ${{ github.event.inputs.tf_action == 'Pre-Checks' }}
-      RUN_INIT: ${{ github.event_name == 'push' || github.event_name == 'pull_request' || github.event.inputs.tf_action == 'Plan' || github.event.inputs.tf_action == 'Plan-Apply' || github.event.inputs.tf_action == 'Destroy' }}
       RUN_PLAN: ${{ github.event_name == 'push' || github.event_name == 'pull_request' || github.event.inputs.tf_action == 'Plan' || github.event.inputs.tf_action == 'Plan-Apply' }}
       RUN_APPLY: ${{ github.event.inputs.tf_action == 'Plan-Apply' }}
       RUN_DESTROY: ${{ github.event.inputs.tf_action == 'Destroy' }}
@@ -74,16 +71,7 @@ jobs:
         with:
           terraform_version: 1.13.0
 
-      - name: Pre-Checks
-        run: |
-          echo "--- Pre-Checks: Terraform Backend ---" \
-          echo "Backend: Resource Group: $TF_BACKEND_RG" \
-          echo "Backend: Storage Account: $TF_BACKEND_SA" \
-          echo "Backend: Blob Container: $TF_BACKEND_CONTAINER" \
-          echo "Backend: State Key: $TF_BACKEND_KEY"
-
       - name: Terraform Init
-        if: env.RUN_INIT == 'true'
         timeout-minutes: 5  # This step will fail if it runs longer than 'x' minutes.
         run: |
           terraform init \
