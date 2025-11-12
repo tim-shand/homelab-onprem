@@ -58,7 +58,7 @@ data "github_repository" "gh_repo" {
 resource "github_repository_environment" "gh_repo_env" {
   count               = var.create_github_env ? 1 : 0 # Eval the variable true/false to set count.
   environment         = var.project_name # Get from variable map for project. 
-  repository          = data.github_repository.gh_repo.name # Obtained from data call.
+  repository          = data.github_repository.gh_repo.full_name # Obtained from data call.
   deployment_branch_policy {
     protected_branches     = false # Only branches with branch protection rules can deploy to this environment.
     custom_branch_policies = false # Only branches that match the specified name patterns can deploy to this environment.
@@ -68,7 +68,7 @@ resource "github_repository_environment" "gh_repo_env" {
 # Create: Github Repo - Environment: Variable (Backend Container)
 resource "github_actions_environment_variable" "gh_repo_env_var" {
   count            = var.create_github_env ? 1 : 0 # Eval the variable true/false to set count.
-  repository       = data.github_repository.gh_repo.name
+  repository       = data.github_repository.gh_repo.full_name
   environment      = github_repository_environment.gh_repo_env[count.index].environment
   variable_name    = "TF_BACKEND_CONTAINER"
   value            = azurerm_storage_container.iac_storage_container.name
