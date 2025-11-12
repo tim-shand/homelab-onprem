@@ -17,6 +17,7 @@ on:
     paths:
       - "environments/azure/global/mgt-iac-backends/**"
       - "modules/azure/vending-iac-backend/**"
+      - ".github/workflows/azure/vending-iac-backends.yml"
     branches:
       - main
   
@@ -24,6 +25,7 @@ on:
     paths:
       - "environments/azure/global/mgt-iac-backends/**"
       - "modules/azure/vending-iac-backend/**"
+      - ".github/workflows/azure/vending-iac-backends.yml"
     branches:
       - main
 
