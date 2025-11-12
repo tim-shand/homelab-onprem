@@ -81,4 +81,5 @@ jobs:
           terraform destroy --auto-approve -var-file=terraform.tfvars \
           -var="github_token=$GH_PAT_TOKEN" \
           -var="iac_storage_account_rg=$TF_BACKEND_RG" \
-          -var="iac_storage_account_name=$TF_BACKEND_SA"
+          -var="iac_storage_account_name=$TF_BACKEND_SA" \
+          -var="subscription_id_iac=$ARM_SUBSCRIPTION_ID"
