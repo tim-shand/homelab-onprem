@@ -10,14 +10,18 @@ Automatically provision required resources for new Terraform backends and secure
 
 ## Requirements
  
-- Azure Service Principal - API Permissions: `Application.ReadWrite.All`. 
-- Github PAT Token: Added as repository secret, referenced by Github Actions worklflow. 
+- **Azure Service Principal (Entra ID)**
+  - Requires `Application.ReadWrite.All` API permission to allow the the Service Principal to update its own credential objects. 
+- **Github PAT Token**
+  - Added as repository secret, referenced by Github Actions worklflows. 
+  - Requires read/write access to actions, actions variables, administration, code, environments, and secrets. 
 
 ## Actions
 
-- Creates Azure Storage Account containers per project, located in the Azure IaC subscription. 
-- Adds the `TF_BACKEND_CONTAINER` variable to the specified Github repo environment. 
-- Adds a repo environment-specific federated credential (OIDC) to the service principal. 
+- Creates Azure storage account containers per project, centrally located in the Azure IaC subscription. 
+- Creates new Github repository environment for the project. 
+- Adds the `TF_BACKEND_CONTAINER` and `TF_BACKEND_KEY` variables to the Github repo environment to be used by the project backend configuration. 
+- Adds a repo environment-specific federated credential (OIDC) to the Azure service principal. 
 
 ## Example
 
