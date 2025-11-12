@@ -69,7 +69,7 @@ resource "azurerm_storage_container" "iac_storage_container" {
 resource "github_repository_environment" "gh_repo_env" {
   count               = var.create_github_env ? 1 : 0 # Eval the variable true/false to set count.
   environment         = var.project_name # Get from variable map for project. 
-  repository          = "${var.github_config["owner"]}/${var.github_config["repo"]}"
+  repository          = var.github_config["repo"]
   deployment_branch_policy {
     protected_branches     = false # Only branches with branch protection rules can deploy to this environment.
     custom_branch_policies = false # Only branches that match the specified name patterns can deploy to this environment.
