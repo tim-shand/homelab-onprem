@@ -22,6 +22,7 @@ jobs:
   deploy-iac-backend:
     name: Deploy IaC Backend
     runs-on: ubuntu-latest
+    timeout-minutes: 30  # The entire job will fail if it runs longer than 'x' minutes.
     defaults:
       run: # Set job defaults for 'run' commands.
         working-directory: ./environments/azure/global/mgt-iac-backends
@@ -51,6 +52,7 @@ jobs:
           terraform_version: 1.13.0
 
       - name: Terraform Init
+        timeout-minutes: 5  # This step will fail if it runs longer than 'x' minutes.
         run: |
           terraform init \
           -backend-config="resource_group_name=$TF_BACKEND_RG" \
@@ -60,6 +62,7 @@ jobs:
 
       - name: Terraform Plan
         if: ${{ github.event.inputs.tf_action == 'Plan' || github.event.inputs.tf_action == 'Plan-Apply' }}
+        timeout-minutes: 5  # This step will fail if it runs longer than 'x' minutes.
         run: |
           terraform plan -out=terraform.tfplan -var-file=terraform.tfvars \
           -var="github_token=$GH_PAT_TOKEN" \
