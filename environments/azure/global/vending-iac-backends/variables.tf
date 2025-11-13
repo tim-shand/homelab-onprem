@@ -19,10 +19,14 @@ variable "iac_storage_account_name" {
 
 variable "projects" {
   description = "Map of project config for new IaC backends."
-  type        = map(object(
-    {create_github_env = bool},
-    {subscription_id = string}
-  ))
+  type        = map(
+    object(
+      {create_github_env = bool}
+    ),
+    object(
+      {subscription_id = string}
+    )
+  )
 }
 
 variable "github_config" {
