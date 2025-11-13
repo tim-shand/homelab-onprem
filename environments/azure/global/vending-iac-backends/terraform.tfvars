@@ -12,6 +12,6 @@ github_config = {
 projects = {
   "azure-workload-test" = { 
     create_github_env = true
-    subscription_id_env = "66f229bc-adb1-4b24-be8d-bd2a9b471336"
+    subscription_id_env = "9173fb12-e761-49ab-8a72-fc4c578ff87b"
   }
 }
