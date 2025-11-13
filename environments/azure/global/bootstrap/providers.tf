@@ -18,12 +18,6 @@ terraform {
           version = "~> 6.6.0"
       }
   }
-  # backend "local" {
-  #   path = "azure-mgt-iac-bootstrap.tfstate" # Used for initial bootstrapping process.
-  # }
-  backend "azurerm" {
-    key                  = "azure-mgt-iac-bootstrap.tfstate"
-  } # Use dynamic backend supplied via inline command.
 }
 provider "azurerm" {
   features {}

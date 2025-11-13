@@ -142,7 +142,7 @@ resource "github_actions_secret" "gh_secret_tenant_id" {
   plaintext_value = data.azuread_client_config.current.tenant_id
 }
 
-resource "github_actions_secret" "gh_secret_subscription_id" {
+resource "github_actions_secret" "gh_secret_subscription_id_iac" {
   repository      = data.github_repository.gh_repository.name
   secret_name     = "ARM_SUBSCRIPTION_ID_IAC"
   plaintext_value = var.subscription_id_iac # Subscription ID to be used for IaC.
@@ -182,5 +182,5 @@ resource "github_actions_variable" "gh_var_iac_cn" {
 resource "github_actions_variable" "gh_var_iac_key" {
   repository       = data.github_repository.gh_repository.name
   variable_name    = "TF_BACKEND_KEY" # Terraform state file name.
-  value            = "azure-${var.naming["platform"]}-${var.naming["service"]}.tfstate"
+  value            = "azure-${var.naming["platform"]}-${var.naming["service"]}-backends.tfstate"
 }

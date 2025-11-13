@@ -27,7 +27,8 @@ param(
     [Parameter(Mandatory=$true)][string]$AzureSubscriptionIaC, # Azure subscription for IaC.
     [switch]$destroy # Add switch parameter for delete option.
 )
-$workingDir = "$((Get-Location).Path)/environments/azure/global/bootstrap" # Working directory for Terraform files
+#$workingDir = "$((Get-Location).Path)/environments/azure/global/bootstrap" # Working directory for Terraform files
+$workingDir = "$((Get-Location).Path)\environments\azure\global\bootstrap" # Working directory for Terraform files
 
 # Required applications.
 $requiredApps = @(
@@ -202,6 +203,7 @@ else{
 # MAIN: Stage 2 - Display Intended Actions
 #================================================#
 
+Write-Host "`r`nWorking Directory: $workingDir"
 Write-Host "Target Azure Environment:" -ForegroundColor Cyan
 Write-Host "- Tenant ID: $($azSession.tenantId)"
 Write-Host "- Subscription ID: $($azSession.id)"
@@ -390,11 +392,10 @@ terraform {
         resource_group_name  = "$($tf_rg)"
         storage_account_name = "$($tf_sa)"
         container_name       = "$($tf_cn)"
-        key                  = "bootstrap.tfstate"
+        key                  = "azure-bootstrap.tfstate"
     }
 }
 "@
-
     $tfBackend | Out-File -Encoding utf8 -FilePath "$workingDir\backend.tf" -Force
 
     # Terraform: Migrate State
@@ -414,3 +415,12 @@ terraform {
         exit 1
     }
 }
+
+#================================================#
+# MAIN: Stage 6 - Clean Up
+#================================================#
+
+Remove-Item -Path "$workingDir\backend.tf" -Force
+Remove-Item -Path "$workingDir\bootstrap.*" -Force
+Remove-Item -Path "$workingDir\.terraform*" -Recurse -Force
+Remove-Item -Path "$workingDir\*.tfstate*" -Force
