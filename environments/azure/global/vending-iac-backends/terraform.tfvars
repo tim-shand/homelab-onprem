@@ -11,7 +11,7 @@ github_config = {
 # Object of projects that require IaC backend.
 projects = {
   "azure-workload-test" = { 
-    create_github_env = true 
+    create_github_env = true
     subscription_id = "1234-1234-1234-1234"
   }
 }

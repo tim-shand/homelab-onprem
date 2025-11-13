@@ -54,6 +54,7 @@ jobs:
       ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }} # Azure: Tenant ID
       ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }} # Azure: Service Principal ID
       ARM_SUBSCRIPTION_ID_IAC: ${{ secrets.ARM_SUBSCRIPTION_ID_IAC }} # Azure: Subscription for IaC Backends.
+      ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID_IAC }} # Azure: Subscription for target resources.
 
       # Github PAT Auth
       GH_PAT_TOKEN: ${{ secrets.GH_PAT_TOKEN }} # Required by Terraform provider to manage environments.
