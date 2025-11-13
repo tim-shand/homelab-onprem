@@ -2,7 +2,6 @@
 # Vending: Azure IaC Backends
 #=================================================================#
 
-# Backend: Proxmox (on-prem)
 module "vending_iac_backends" {
   for_each = var.projects # Repeat for all listed in terraform.tfvars
   source = "../../../../modules/azure/vending-iac-backend"
