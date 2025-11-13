@@ -144,8 +144,8 @@ resource "github_actions_secret" "gh_secret_tenant_id" {
 
 resource "github_actions_secret" "gh_secret_subscription_id" {
   repository      = data.github_repository.gh_repository.name
-  secret_name     = "ARM_SUBSCRIPTION_ID"
-  plaintext_value = var.subscription_id_iac # Primary platform subscription ID.
+  secret_name     = "ARM_SUBSCRIPTION_ID_IAC"
+  plaintext_value = var.subscription_id_iac # Subscription ID to be used for IaC.
 }
 
 resource "github_actions_secret" "gh_secret_client_id" {
