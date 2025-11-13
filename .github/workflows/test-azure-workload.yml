@@ -52,7 +52,8 @@ jobs:
       ARM_USE_OIDC: true
       ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }} # Azure: Tenant ID
       ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }} # Azure: Service Principal ID
-      ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }} # Azure: Target subscription for resources.
+      ARM_SUBSCRIPTION_ID_IAC: ${{ secrets.ARM_SUBSCRIPTION_ID_IAC }} # Azure: Subscription for IaC Backends.
+      ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }} # Azure: Subscription for resources.
 
       # Github PAT Auth
       GH_PAT_TOKEN: ${{ secrets.GH_PAT_TOKEN }} # Required by Terraform provider to manage environments.
@@ -78,7 +79,8 @@ jobs:
           -backend-config="resource_group_name=$TF_BACKEND_RG" \
           -backend-config="storage_account_name=$TF_BACKEND_SA" \
           -backend-config="container_name=$TF_BACKEND_CONTAINER" \
-          -backend-config="key=$TF_BACKEND_KEY"
+          -backend-config="key=$TF_BACKEND_KEY" \
+          -backend-config="subscription_id=$ARM_SUBSCRIPTION_ID_IAC"
 
       - name: Terraform Plan
         if: env.RUN_PLAN == 'true'
