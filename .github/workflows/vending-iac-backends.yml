@@ -15,7 +15,7 @@ on:
 
   push: # Commits
     paths:
-      - "environments/azure/global/mgt-iac-backends/**"
+      - "environments/azure/global/vending-iac-backends/**"
       - "modules/azure/vending-iac-backend/**"
       - ".github/workflows/vending-iac-backends.yml"
     branches:
@@ -23,7 +23,7 @@ on:
   
   pull_request: # PR
     paths:
-      - "environments/azure/global/mgt-iac-backends/**"
+      - "environments/azure/global/vending-iac-backends/**"
       - "modules/azure/vending-iac-backend/**"
       - ".github/workflows/vending-iac-backends.yml"
     branches:
@@ -41,7 +41,7 @@ jobs:
     timeout-minutes: 30  # The entire job will fail if it runs longer than 'x' minutes.
     defaults:
       run: # Set job defaults for 'run' commands.
-        working-directory: ./environments/azure/global/mgt-iac-backends
+        working-directory: ./environments/azure/global/vending-iac-backends
     env:
       # Backend (IaC subscription)
       TF_BACKEND_RG: ${{ vars.TF_BACKEND_RG }} # Backend: Resource Group
