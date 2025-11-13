@@ -2,8 +2,8 @@
 # Azure IaC Backends: Variables
 #=================================================================#
 
-variable "subscription_id_iac" {
-  description = "Azure subscription for IaC."
+variable "subscription_id" {
+  description = "Azure subscription for target resources."
   type        = string
 }
 
@@ -20,8 +20,8 @@ variable "iac_storage_account_name" {
 variable "projects" {
   description = "Map of project config for new IaC backends."
   type = map(object({
-    create_github_env = bool
-    subscription_id   = string
+    create_github_env     = bool
+    subscription_id_env   = string
   }))
 }
 

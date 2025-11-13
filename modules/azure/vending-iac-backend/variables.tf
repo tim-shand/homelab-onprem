@@ -22,7 +22,7 @@ variable "project_name" {
   type        = string
 }
 
-variable "subscription_id" {
+variable "subscription_id_env" {
   description = "Azure subscription ID for target resources."
   type        = string
 }

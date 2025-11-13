@@ -73,7 +73,7 @@ resource "github_actions_environment_secret" "gh_repo_env_secret_sub" {
   repository       = github_repository_environment.gh_repo_env[count.index].repository
   environment      = github_repository_environment.gh_repo_env[count.index].environment
   secret_name      = "ARM_SUBSCRIPTION_ID"
-  plaintext_value  = var.subscription_id
+  plaintext_value  = var.subscription_id_env # Azure subscription for Github environment to use. 
 }
 
 # Create: Github Repo - Environment: Variable (Backend Container)

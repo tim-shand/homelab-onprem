@@ -10,5 +10,5 @@ module "vending_iac_backends" {
   github_config = var.github_config
   project_name = each.key # Prefixed with "tfstate": tfstate-proxmox
   create_github_env = each.value.create_github_env # Create Github resources TRUE/FALSE.
-  subscription_id = each.value.subscription_id # Target subscription to use for resources.
+  subscription_id_env = each.value.subscription_id # Target subscription to use for resources.
 }

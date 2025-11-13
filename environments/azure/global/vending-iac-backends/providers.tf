@@ -20,7 +20,7 @@ terraform {
 provider "azurerm" {
   features {}
   tenant_id       = data.azuread_client_config.current.tenant_id # Get tenant from current session.
-  subscription_id = var.subscription_id_iac # Uses dedicated IaC subscription.
+  subscription_id = var.subscription_id # Target subscription for resources. 
 }
 
 provider "github" {
