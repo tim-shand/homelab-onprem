@@ -60,11 +60,6 @@ resource "azurerm_storage_container" "iac_storage_container" {
 # Github: Environments, Secrets, and Variables
 #=================================================================#
 
-# Data: Existing Github Repository.
-# data "github_repository" "gh_repo" {
-#   full_name = "${var.github_config["owner"]}/${var.github_config["repo"]}" # "my-name/homelab"
-# }
-
 # Create: Github Repo - Environment
 resource "github_repository_environment" "gh_repo_env" {
   count               = var.create_github_env ? 1 : 0 # Eval the variable true/false to set count.
@@ -72,10 +67,18 @@ resource "github_repository_environment" "gh_repo_env" {
   repository          = var.github_config["repo"]
 }
 
+# Create: Github Repo - Environment: Secret (Resource Subscription ID).
+resource "github_actions_environment_secret" "gh_repo_env_secret_sub" {
+  count            = var.create_github_env ? 1 : 0 # Eval the variable true/false to set count.
+  repository       = github_repository_environment.gh_repo_env[count.index].repository
+  environment      = github_repository_environment.gh_repo_env[count.index].environment
+  secret_name      = "ARM_SUBSCRIPTION_ID"
+  plaintext_value  = var.subscription_id
+}
+
 # Create: Github Repo - Environment: Variable (Backend Container)
 resource "github_actions_environment_variable" "gh_repo_env_var" {
   count            = var.create_github_env ? 1 : 0 # Eval the variable true/false to set count.
-  #repository       = data.github_repository.gh_repo.full_name
   repository       = github_repository_environment.gh_repo_env[count.index].repository
   environment      = github_repository_environment.gh_repo_env[count.index].environment
   variable_name    = "TF_BACKEND_CONTAINER"
@@ -88,5 +91,5 @@ resource "github_actions_environment_variable" "gh_repo_env_var_key" {
   repository      = github_repository_environment.gh_repo_env[count.index].repository
   environment     = github_repository_environment.gh_repo_env[count.index].environment
   variable_name   = "TF_BACKEND_KEY"
-  value           = "tfstate-${var.project_name}.tfstate"
+  value           = "${var.project_name}.tfstate"
 }

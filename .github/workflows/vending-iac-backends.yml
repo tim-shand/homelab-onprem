@@ -58,13 +58,9 @@ jobs:
       # Github PAT Auth
       GH_PAT_TOKEN: ${{ secrets.GH_PAT_TOKEN }} # Required by Terraform provider to manage environments.
 
-      # Determine if Plan should run (on commits, PR, plan and plan-apply). 
+      # Determine which steps should run (on commits, PR, plan and plan-apply). 
       RUN_PLAN: ${{ github.event_name == 'push' || github.event_name == 'pull_request' || github.event.inputs.tf_action == 'Plan' || github.event.inputs.tf_action == 'Plan-Apply' }}
-
-      # Determine if Apply should run (only on manual trigger). 
       RUN_APPLY: ${{ github.event.inputs.tf_action == 'Plan-Apply' }}
-
-      # Determine if Destroy should run (only on manual trigger). 
       RUN_DESTROY: ${{ github.event.inputs.tf_action == 'Destroy' }}
 
     steps:
