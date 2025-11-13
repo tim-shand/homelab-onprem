@@ -22,6 +22,12 @@ variable "project_name" {
   type        = string
 }
 
+variable "subscription_id" {
+  description = "Azure subscription ID for target resources."
+  type        = string
+  sensitive   = true
+}
+
 variable "create_github_env" {
   description = "Toggle the creation of Github environment and variables."
   type = bool
